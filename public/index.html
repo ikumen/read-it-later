@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome RITL - Read it Later</title>
+
+  <link rel="stylesheet" href="//unpkg.com/tachyons@4.10.0/css/tachyons.min.css"/>
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,600&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      height: 100%;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .md-large {
+      font-size: 2.4rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="fl w-100 pv3 ph1 ph3-m ph6-l">
+    <div class="fl dib w-10 nowrap"><i class="material-icons md-large orange v-mid">bookmark</i><span class="dn dib-m dib-l f3-l">RITL</span></div>
+    <form class="fl w-90 nowrap" id="search-n-add-form">
+      <div class="dib nowrap fr">
+        <button id="search-btn" type="button" class="pv2 ph1 ph3-l ml1 ml2-l br2 pointer b--blue bg-blue fw3 fw6-l white">Search</button>
+        <button id="add-page-btn" type="button" class="pv2 ph1 ph3-l ml1 ml2-l br2 pointer b--green bg-green fw3 fw6-l white">Add Page</button>  
+      </div>
+      <input type="text" id="term-or-url-input" class="fr w-50-ns w-30 pa2" placeholder="search or url of page">
+    </form>
+  </header>
+
+  <script defer src="/__/firebase/7.2.3/firebase-app.js"></script>
+  <script defer src="/__/firebase/7.2.3/firebase-firestore.js"></script>
+  <!-- include only the Firebase features as you need -->
+  
+  <!-- <script defer src="/__/firebase/7.2.3/firebase-database.js"></script> -->
+  <!-- <script defer src="/__/firebase/7.2.3/firebase-messaging.js"></script> -->
+  <!-- <script defer src="/__/firebase/7.2.3/firebase-storage.js"></script> -->
+  <!-- initialize the SDK after all desired features are loaded -->
+  <script defer src="/__/firebase/init.js"></script>
+  <script defer src="index.js"></script>
+
+</body>
+</html>
