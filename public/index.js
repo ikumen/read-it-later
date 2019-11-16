@@ -54,14 +54,14 @@ function addPage({url}) {
 }
 
 ready(() => {
-  /* The overloaded input field that holds search terms or URLs */
+  // The overloaded input field that holds search terms or URLs
   const termOrUrlInput = document.getElementById('term-or-url-input');
 
-  /* Prevent default form submit, we explicitly handle add URL/searching. */
+  // Prevent default form submit, we explicitly handle add URL/searching
   const searchAddForm = document.getElementById('search-n-add-form');
   searchAddForm.addEventListener('submit', (ev) => ev.preventDefault());
 
-  /* Handle adding web page */
+  // Handle adding web page
   const addPageBtn = document.getElementById('add-page-btn');
   addPageBtn.addEventListener('click', (ev) => {
     const url = termOrUrlInput.value;
