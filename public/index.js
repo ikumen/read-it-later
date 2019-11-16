@@ -1,7 +1,8 @@
 /**
+ * Helper that will defer executing a given function, until DOM is loaded.
  * @param {Function} fn to call when DOM has finished loading 
  */
-function ready(fn) {
+function ready (fn) {
   if (document.readyState === "complete") {
     fn();
   } else {
@@ -11,7 +12,7 @@ function ready(fn) {
 
 /**
  * Very naive check for a valid URL. Must be http based
- * and a local address.
+ * and NOT a local address.
  * 
  * @param {String} url to bookmark 
  */
@@ -19,11 +20,19 @@ function isValidURL(url) {
   const a = document.createElement('a');
   a.href = url;
   const {host = '', protocol = ''} = a;
-  return (protocol.startsWith('http') && !host.startsWith('localhost'));
+  return (protocol.startsWith('http') 
+      && !host.startsWith('localhost') 
+      && host !== window.location.hostname);
 }
 
-// Get a reference to the Firestore DB
+// Get a reference to the Firestore DB, assuming Firebase scripts were loaded before this.
 var db = firebase.firestore();
+
+if (window.location.hostname === 'localhost') {
+  // Use the emulator if we in development, it's kinda hacky but see:
+  // https://firebase.google.com/docs/emulator-suite/connect_and_prototype
+  db.settings({ host: "localhost:8080", ssl: false });
+}
 
 /**
  * Add a new web page to the database.
