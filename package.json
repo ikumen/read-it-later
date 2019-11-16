@@ -1,0 +1,26 @@
+{
+  "name": "ritl-firebase-how-to",
+  "version": "0.0.1",
+  "description": "Read-it-Later How-to",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "8.7.0",
+    "puppeteer": "2.0.0"
+  },
+  "devDependencies": {
+    "@firebase/testing": "0.15.1",
+    "jest": "24.9.0",
+    "mocha": "6.2.2",
+    "sinon": "7.5.0"
+  },
+  "scripts": {
+    "test": "mocha test/*.test.js test/**/*.test.js --timeout=30000 --watch --extension js,html"
+  },
+  "keywords": [
+    "firebase",
+    "howto",
+    "javascript"
+  ],
+  "author": "ikumen@gnoht.com",
+  "license": "MIT"
+}
