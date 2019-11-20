@@ -4,8 +4,11 @@ const firestoreService = require('./firestore-service');
 const storageService = require('./storage-service');
 
 /**
- * Handler that will abort when request is of type "media". Current the 
- * list of media types are: avi, flv, mov, mp3, mp4, wmv.
+ * Helper for determining if the child requests should be aborted. We abort
+ * any request for media content--as we cannot extract text or generate PDFs 
+ * from video or audio content. Currently the blacklist of media types are: 
+ * avi, flv, mov, mp3, mp4, wmv.
+ * 
  * @param {Object} interceptedRequest see https://pptr.dev/#?product=Puppeteer&version=v2.0.0&show=api-class-request 
  */
 const abortMediaInterceptedRequestHandler = (interceptedRequest) => {

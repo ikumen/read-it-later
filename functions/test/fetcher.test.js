@@ -11,7 +11,6 @@ const fetcher = require('../fetcher');
 const firestoreService = require('../firestore-service');
 const storageService = require('../storage-service');
 
-
 describe('Fetcher Unit Tests', () => {
   // Mocks the "save" function for each service
   let firestoreSaveMock; 
@@ -70,3 +69,4 @@ describe('Fetcher Unit Tests', () => {
   });
 
 });
+

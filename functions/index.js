@@ -1,8 +1,12 @@
 const functions = require('firebase-functions');
+const firebase = require('firebase-admin');
+const fetcher = require('./fetcher');
+const projectId = 'read-it-later-demo';
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//  response.send("Hello from Firebase!");
-// });
+if (firebase.apps.length == 0) {
+  firebase.initializeApp({projectId});
+}
+
+exports.fetcher = functions.firestore
+  .document('pages/{pageId}')
+  .onCreate(fetcher.handler);

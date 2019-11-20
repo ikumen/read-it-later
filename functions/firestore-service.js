@@ -8,11 +8,7 @@ const firebase = require('firebase-admin');
  * @param {String} page.title
  * @param {String} page.text
  */
-exports.save = async ({id, title, text}) => {
-  if (firebase.apps.length === 0) {
-    firebase.initializeApp();
-  }
-
+exports.save = ({id, title, text}) => {
   const db = firebase.firestore();
   return db.collection('pages').doc(id).update({title, text});
 }
