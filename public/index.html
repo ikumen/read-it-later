@@ -30,15 +30,28 @@
     </form>
   </header>
 
+  <div class="fl w-100 ph1 ph3-m ph6-l">
+    <div class="fl w-100 ph2 ph3-m ph5-l dn" id="errors">
+      <div class="fl w-100 ba b--light-gray pa2 br2 bg-washed-red">
+        <div class="fl w-90" id="errorMessages"></div>
+        <div class="fl w-10 tr"><i class="material-icons pointer" id="close-errors-btn">close</i></div>
+      </div>
+    </div>
+    <div class="fl w-100" id="results">
+      <div class="fl w-100 tr"><i class="material-icons pointer" id="refresh-btn">refresh</i></div>
+      <ul class="fl w-100 list" id="results-list">
+      </ul>
+    </div>
+  </div>
+
   <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-  <script defer src="/__/firebase/7.2.3/firebase-app.js"></script>
+  <script defer src="/__/firebase/7.4.0/firebase-app.js"></script>
   <!-- include only the Firebase features as you need -->
-  <script defer src="/__/firebase/7.2.3/firebase-firestore.js"></script>
+  <script defer src="/__/firebase/7.4.0/firebase-firestore.js"></script>
   <!-- initialize the SDK after all desired features are loaded -->
   <script defer src="/__/firebase/init.js"></script>
 
   <!-- Our web app script -->
   <script defer src="index.js"></script>
-
 </body>
 </html>
