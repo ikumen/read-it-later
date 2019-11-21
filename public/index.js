@@ -101,13 +101,14 @@ function displayResults(pages, clearResults = false) {
     resultsEl.innerHtml(''); 
   }
 
+  console.log(pages)
   pages.forEach(({id, title, createdAt, url, snippet}) => {
-    el(id, 'li', resultsUl)
+    el(id, 'li', resultsEl)
       .addClass('dim')
       .innerHtml(`
         <h3 class="fl w-100 fw3 mv2">${title || url}</h3>
         <a href="${url}" class="fl w-100" target="_new">${url}</a>
-        <div class="fl w-100 f5 black-30 mv1">${createdAt.toDate()}</div>
+        <div class="fl w-100 f5 black-30 mv1"></div>
         <div class="fl w-100">${snippet || ''}</div>        
       `);
   });
@@ -129,6 +130,11 @@ function searchAndDisplayResults(term) {
     .catch(displayError);
 }
 
+function getPage(id) {
+  return db.collection('pages').doc(id).get()
+    .then(doc => ({id: doc.id, ...doc.data()}));
+}
+
 function search(term) {
   term = (term || '').trim().toLowerCase();
 
@@ -148,11 +154,7 @@ function search(term) {
         pages.push(doc.data().page));
 
       // get all the pages given their ids
-      return Promise.all(
-          pages.map(id => 
-            db.collection('pages')
-              .doc(id)
-              .get()));
+      return Promise.all(pages.map(getPage));
     });
 }
 
