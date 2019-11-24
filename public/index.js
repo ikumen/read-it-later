@@ -14,10 +14,15 @@ const el = (id, tagName, parent) => {
     }
   }
 
+  _el.__listeners = {};
+
   const props = {
     get: () => _el,
     addClass: (cls) => {
-      cls.split(' ').forEach(c => _el.classList.add(c));
+      cls.split(' ').forEach(c => {
+        if (!_el.classList.contains(c))
+          _el.classList.add(c);
+      });
       return props; // for chaining
     },
     removeClass: (cls) => {
@@ -33,7 +38,13 @@ const el = (id, tagName, parent) => {
       return props;
     },
     addListener: (name, handler) => {
-      _el.addEventListener(name, handler);
+      _el.__listeners[name] = handler;
+      _el.addEventListener(name, handler, false);
+      return props;
+    },
+    clearListeners: () => {
+      for(const name in _el.__listeners) 
+        _el.removeEventListener(name, _el.__listeners[name], false);
       return props;
     }
   }
@@ -67,13 +78,17 @@ function isValidURL(url) {
       && host !== window.location.hostname);
 }
 
-// Get a reference to the Firestore DB, assuming Firebase scripts were loaded before this.
-var db = firebase.firestore();
 
+// Get a reference to the Firestore DB, assuming Firebase scripts were loaded before this.
+const db = firebase.firestore();
+const DEFAULT_RESULT_SIZE = 10;
+
+let searchEndpoint = 'https://us-central1-ritl-app.cloudfunctions.net/search';
 if (window.location.hostname === 'localhost') {
   // Use the emulator if we in development, it's kinda hacky but see:
   // https://firebase.google.com/docs/emulator-suite/connect_and_prototype
   db.settings({ host: "localhost:8080", ssl: false });
+  searchEndpoint = 'http://localhost:5001/ritl-app/us-central1/search';  
 }
 
 /**
@@ -95,23 +110,37 @@ function addPage({url}) {
   }
 }
 
-function displayResults(pages, clearResults = false) {
+function displayResults(pages, clearResults) {
+  const moreResultsEl = el('more-results');
+  moreResultsEl.addClass('dn');
+
   const resultsEl = el('results-list');
   if (clearResults) {
     resultsEl.innerHtml(''); 
   }
 
-  console.log(pages)
-  pages.forEach(({id, title, createdAt, url, snippet}) => {
+  // TODO: make 10 configurable page size
+  let i = 0;
+  while (i < pages.length && i < DEFAULT_RESULT_SIZE) {
+    const {id, title, url, description} = pages[i];
     el(id, 'li', resultsEl)
-      .addClass('dim')
+      .addClass('cf pv3 hover-bg-washed-yellow')
       .innerHtml(`
-        <h3 class="fl w-100 fw3 mv2">${title || url}</h3>
-        <a href="${url}" class="fl w-100" target="_new">${url}</a>
-        <div class="fl w-100 f5 black-30 mv1"></div>
-        <div class="fl w-100">${snippet || ''}</div>        
+        <h3 class="fl w-100 fw3 mv2"><a href="${url}" class="link">${title || url}</a></h3>
+        <a href="${url}" class="link fl w-100 ma0 green truncate" target="_new">${url}</a>
+        <div class="fl w-100">${description}</div>        
       `);
-  });
+    i++;
+  }
+
+  if (pages.length > i) {
+    el('more-results')
+      .removeClass('dn')
+      .clearListeners()
+      .addListener('click', () => {
+        search(el('term-or-url-input').get().value, pages[i].id, false)
+    })
+  }
 }
 
 function displayError(error) {
@@ -124,38 +153,14 @@ function dismissError(errors) {
   el('errors').addClass('dn');
 }
 
-function searchAndDisplayResults(term) {
-  search(term)
-    .then(displayResults)
-    .catch(displayError);
-}
-
-function getPage(id) {
-  return db.collection('pages').doc(id).get()
-    .then(doc => ({id: doc.id, ...doc.data()}));
-}
-
-function search(term) {
+function search(term, startAt, clearResults = true) {
   term = (term || '').trim().toLowerCase();
+  startAt = startAt ? `&at=${startAt}` : '';
 
-  if (!term) {
-    return Promise.reject('A search term is required!');
-  }
-
-  return db.collection('terms')
-      .where('term', '==', term)
-      .orderBy('count', 'desc')
-      .limit(10)
-      .get()
-    .then(snapshot => {
-      // terms are mapped to page ids
-      const pages = [];
-      snapshot.forEach(doc => 
-        pages.push(doc.data().page));
-
-      // get all the pages given their ids
-      return Promise.all(pages.map(getPage));
-    });
+  fetch(`${searchEndpoint}?term=${term}${startAt}&limit=${DEFAULT_RESULT_SIZE+1}`)
+    .then(res => res.json())
+    .then(pages => displayResults(pages, clearResults))
+    .catch(displayError);
 }
 
 
@@ -175,7 +180,7 @@ ready(() => {
   // Handle searching for term and displaying results
   el('search-btn').addListener('click', () => {
     const term = termOrUrlInputEl.get().value;
-    searchAndDisplayResults(term);
+    search(term);
   });
 
   // Register handler to dismiss errors
