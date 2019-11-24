@@ -16,42 +16,72 @@
     .md-large {
       font-size: 2.4rem;
     }
+    .ritl-layout > header {
+      position: fixed;
+      height: 65px;
+      width: 100%;
+    }
+    .ritl-layout {
+      height: 100%;
+      overflow: auto;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .ritl-layout > main {
+      padding-top: 65px;
+      flex: 1 0 auto;
+    }
+    .ritl-layout > footer {
+      flex-shrink: 0;
+    }
+
   </style>
 </head>
 <body>
-  <header class="fl w-100 pv3 ph1 ph3-m ph6-l">
-    <div class="fl dib w-10 nowrap"><i class="material-icons md-large orange v-mid">bookmark</i><span class="dn dib-m dib-l f3-l">RITL</span></div>
-    <form class="fl w-90 nowrap" id="search-n-add-form">
-      <div class="dib nowrap fr">
-        <button id="search-btn" type="button" class="pv2 ph1 ph3-l ml1 ml2-l br2 pointer b--blue bg-blue fw3 fw6-l white">Search</button>
-        <button id="add-page-btn" type="button" class="pv2 ph1 ph3-l ml1 ml2-l br2 pointer b--green bg-green fw3 fw6-l white">Add Page</button>  
+<div class="ritl-layout">
+  <header class="fl cf w-100 pv3 ph1 ph3-m ph6-l bg-near-white bb b--light-gray">
+    <div class="fl dib w-10 nowrap"><i class="material-icons md-large orange v-mid">bookmark</i><span class="dn dib-m dib-l f4-l gray">RITL</span></div>
+    <form class="fl w-90 nowrap tr" id="search-n-add-form">
+      <input type="text" id="term-or-url-input" class=" w-60-l w-50-m w-40 pa2 bw0 br1" placeholder="search or url of page" tabindex="1">
+      <div class="dib nowrap">
+        <button id="search-btn" type="button" class="pv2 ph1 ph3-l ml1 bw0 br1 pointer b--blue bg-blue f6 f5-ns fw3 fw6-l white" tabindex="2">Search</button>
+        <button id="add-page-btn" type="button" class="pv2 ph1 ph3-l ml1 bw0 br1 pointer b--green bg-green f6 f5-ns fw3 fw6-l white" tabindex="3">Add Page</button>  
       </div>
-      <input type="text" id="term-or-url-input" class="fr w-50-ns w-30 pa2" placeholder="search or url of page">
     </form>
   </header>
 
-  <div class="fl w-100 ph1 ph3-m ph6-l">
-    <div class="fl w-100 ph2 ph3-m ph5-l dn" id="errors">
-      <div class="fl w-100 ba b--light-gray pa2 br2 bg-washed-red">
+  <main class="fl cf w-100 ph1 ph3-m ph6-l bg-white">
+    <div class="fl w-100 ph2 ph3-m ph5-l dn mt2" id="errors">
+      <div class="fl w-100 ba b--light-gray pa2 br2 bg-light-red">
         <div class="fl w-90" id="errorMessages"></div>
         <div class="fl w-10 tr"><i class="material-icons pointer" id="close-errors-btn">close</i></div>
       </div>
+    </div> 
+    <div class="fl w-100 pa0 mt0" id="results">
+      <ul class="fl w-100 list pa0" id="results-list"></ul>
+      <div class="fl w-100 tc">
+        <div class="w-50 dn pointer" id="more-results">More Results</div>
+      </div>
     </div>
-    <div class="fl w-100" id="results">
-      <div class="fl w-100 tr"><i class="material-icons pointer" id="refresh-btn">refresh</i></div>
-      <ul class="fl w-100 list" id="results-list">
-      </ul>
+  </main>
+
+  <footer class="footer pt3 pb4 ph1 ph4-m ph6-l flex items-center gray bt b--light-gray">
+    <div class="w-50 fl f6">&copy; Thong Nguyen</div>
+    <div class="w-50 tr f6">
+      <a class="ml3 link" href="//github.com/ikumen/read-it-later">github</a>
     </div>
-  </div>
+  </footer>
+</div>  
 
-  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-  <script defer src="/__/firebase/7.4.0/firebase-app.js"></script>
-  <!-- include only the Firebase features as you need -->
-  <script defer src="/__/firebase/7.4.0/firebase-firestore.js"></script>
-  <!-- initialize the SDK after all desired features are loaded -->
-  <script defer src="/__/firebase/init.js"></script>
+<!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+<script defer src="/__/firebase/7.4.0/firebase-app.js"></script>
+<!-- include only the Firebase features as you need -->
+<script defer src="/__/firebase/7.4.0/firebase-firestore.js"></script>
+<!-- initialize the SDK after all desired features are loaded -->
+<script defer src="/__/firebase/init.js"></script>
 
-  <!-- Our web app script -->
-  <script defer src="index.js"></script>
+<!-- Our web app script -->
+<script defer src="index.js"></script>
 </body>
 </html>
