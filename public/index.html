@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+    <META HTTP-EQUIV="Expires" CONTENT="-1">
   <title>Welcome to Read it Later</title>
 
   <link rel="stylesheet" href="//unpkg.com/tachyons@4.10.0/css/tachyons.min.css"/>
   <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
-  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,600&display=swap" rel="stylesheet">
+  <link href="//fonts.googleapis.com/css?family=Montserrat:400,600&display=swap" rel="stylesheet">
   <style>
     html, body {
       height: 100%;
@@ -34,6 +36,41 @@
     }
     .ritl-layout > footer {
       flex-shrink: 0;
+    }
+
+    .modal {
+      display: none;
+      height: 100%;
+      left: 0;
+      top: -65px;
+      position: fixed;
+      width: 100%;
+    }
+    .modal.open {
+      display: flex;
+      flex-direction: column;
+      padding-top: 65px;
+    }
+    .modal-main {
+      height: 100%;
+      overflow-y: auto;
+    }
+    @keyframes blink {
+      0% { opacity: .2; }
+      20% { opacity: 1; }
+      100% { opacity: .2; }
+    }
+    #signin-loading span {
+      animation-name: blink;
+      animation-duration: 1.4s;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+    #signin-loading span:nth-child(2) {
+      animation-delay: .2s;
+    }
+    #signin-loading span:nth-child(3) {
+      animation-delay: .4s;
     }
 
   </style>
@@ -66,18 +103,39 @@
     </div>
   </main>
 
+  <div id="signin-modal" class="modal">
+    <main class="fl cf w-100 ph1 ph4-m ph6-l bg-blue modal-main">
+      <div class="fl cf w-100 pt6-l pt5-m pt3-s tc white">
+        <h1><i class="material-icons orange md-large v-mid">bookmark</i>Read it Later</h1>
+        <p class="f3-ns f4">
+          Searchable, Archivable, No-Nonsense Bookmarking. 
+        </p>
+        <div class="fl cf w-100 mt4">
+          <span id="signin-btn" class="pv2 ph3 ml1 bw0 br1 pointer b--blue bg-green f6 f5-ns fw3 fw6-l white">Signin with GitHub</span>
+          <span id="signin-loading" class="white f4 dn">Signing in
+            <!-- see https://martinwolf.org/before-2018/blog/2015/01/pure-css-savingloading-dots-animation/ -->
+            <span class="f1 fw7 ph2">.</span><span class="f1 fw7 ph2">.</span><span class="f1 fw7 ph2">.</span>
+          </span>
+        </div>
+      </div>
+    </main>
+  </div>
+
   <footer class="footer pt3 pb4 ph1 ph4-m ph6-l flex items-center gray bt b--light-gray">
     <div class="w-50 fl f6">&copy; Thong Nguyen</div>
     <div class="w-50 tr f6">
-      <a class="ml3 link" href="//github.com/ikumen/read-it-later">github</a>
+      <a class="ml3 link" href="//github.com/ikumen/read-it-later">about</a>
+      <a class="ml3 link" href="/signout" id="signout-link">signout</a>
     </div>
   </footer>
 </div>  
 
 <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-<script defer src="/__/firebase/7.4.0/firebase-app.js"></script>
+<script defer src="/__/firebase/7.5.0/firebase-app.js"></script>
 <!-- include only the Firebase features as you need -->
-<script defer src="/__/firebase/7.4.0/firebase-firestore.js"></script>
+<script defer src="/__/firebase/7.5.0/firebase-auth.js"></script>
+<script defer src="/__/firebase/7.5.0/firebase-firestore.js"></script>
+<script defer src="/__/firebase/7.5.0/firebase-functions.js"></script>
 <!-- initialize the SDK after all desired features are loaded -->
 <script defer src="/__/firebase/init.js"></script>
 
