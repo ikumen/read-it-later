@@ -81,14 +81,17 @@ function isValidURL(url) {
 
 // Get a reference to the Firestore DB, assuming Firebase scripts were loaded before this.
 const db = firebase.firestore();
+const functions = firebase.functions();
+const projectId = 'ritl-app';
 const DEFAULT_RESULT_SIZE = 10;
 
-let searchEndpoint = 'https://us-central1-ritl-app.cloudfunctions.net/search';
+let searchEndpoint = 'https://us-central1-ritl-app-dev.cloudfunctions.net/search';
 if (window.location.hostname === 'localhost') {
   // Use the emulator if we in development, it's kinda hacky but see:
   // https://firebase.google.com/docs/emulator-suite/connect_and_prototype
   db.settings({ host: "localhost:8080", ssl: false });
-  searchEndpoint = 'http://localhost:5001/ritl-app/us-central1/search';  
+  functions.useFunctionsEmulator('http://localhost:5001');
+  searchEndpoint = `http://localhost:5001/${projectId}-dev/us-central1/search`;  
 }
 
 /**
@@ -110,16 +113,19 @@ function addPage({url}) {
   }
 }
 
-function displayResults(pages, clearResults) {
+function clearResults() {
+  el('results-list').innerHtml('');
+}
+
+function displayResults(pages, clear) {
   const moreResultsEl = el('more-results');
   moreResultsEl.addClass('dn');
 
   const resultsEl = el('results-list');
-  if (clearResults) {
-    resultsEl.innerHtml(''); 
+  if (clear) {
+    clearResults();
   }
 
-  // TODO: make 10 configurable page size
   let i = 0;
   while (i < pages.length && i < DEFAULT_RESULT_SIZE) {
     const {id, title, url, description} = pages[i];
@@ -138,8 +144,9 @@ function displayResults(pages, clearResults) {
       .removeClass('dn')
       .clearListeners()
       .addListener('click', () => {
-        search(el('term-or-url-input').get().value, pages[i].id, false)
-    })
+        const term = el('term-or-url-input').get().value;
+        search(term, pages[i].id, false)
+      })
   }
 }
 
@@ -153,18 +160,139 @@ function dismissError(errors) {
   el('errors').addClass('dn');
 }
 
-function search(term, startAt, clearResults = true) {
-  term = (term || '').trim().toLowerCase();
+/**
+ * Search for the given term.
+ * @param {String} term 
+ * @param {String} startAt starting cursor for pagination
+ * @param {Boolean} isNew indicate whether we are starting a new search or next resultset
+ */
+function search(term, startAt, isNew=true) {
+  // Clean up our search term 
+  term = (term || '').trim() // no starting or trailing spaces
+    .replace(/\w|_/g,'') // remove all non alpha numeric chars
+    .toLowerCase();        
+  // Build the cursor param
   startAt = startAt ? `&at=${startAt}` : '';
+  // Set the number of results to return
+  const limit = DEFAULT_RESULT_SIZE + 1;
 
-  fetch(`${searchEndpoint}?term=${term}${startAt}&limit=${DEFAULT_RESULT_SIZE+1}`)
-    .then(res => res.json())
-    .then(pages => displayResults(pages, clearResults))
-    .catch(displayError);
+  // Do search
+
+  // fetch(`${searchEndpoint}?term=${term}${startAt}&limit=${DEFAULT_RESULT_SIZE+1}`)
+  //   .then(res => res.json())
+  //   .then(pages => displayResults(pages, isNew))
+  //   .catch(displayError);
+  //func
+  //firebase.auth().currentUser.getIdToken(true).then(idToken => {
+    functions.httpsCallable('search')({term, startAt, limit})
+    .then(pages => displayResults(pages, isNew))
+    .catch(error => displayError([error.message, error.details].join(', ')));
+  //})
 }
 
+/**
+ * Display or hide the signin modal.
+ * @param {boolean} show 
+ */
+function toggleSigninModal(show=true) {
+  if (show) {
+    el('signin-modal').addClass('open');
+    el('signout-link').addClass('dn');  
+  } else {
+    el('signin-modal').removeClass('open');
+    el('signout-link').removeClass('dn');  
+  }
+}
+
+/**
+ * Display or hide the signing loading status.
+ * @param {boolean} show 
+ */
+function toggleSigninLoading(show = true) {
+  if (show) {
+    el('signin-btn').addClass('dn');
+    el('signin-loading').removeClass('dn');
+  } else {
+    el('signin-btn').removeClass('dn');
+    el('signin-loading').addClass('dn');
+  }
+}
+
+/**
+ * Load the home page, thus hiding the signin page. Called
+ * after successful authentication or already auth and 
+ * reload page.
+ */
+function loadHome() {
+  toggleSigninModal(false);
+  search();
+}
+
+/**
+ * Sign us out, and show the signin page afterwards.
+ */
+function signout() {
+  clearResults();
+  firebase.auth().signOut().then(() => {
+    history.pushState({}, '', '/signin');
+    toggleSigninModal(true);
+  });
+}
+
+/**
+ * Attempt to signin with the configured OAuth provider.
+ */
+function signin() {
+  // Get ready for signin to Github
+  var githubProvider = new firebase.auth.GithubAuthProvider();
+  githubProvider.addScope('user');
+  githubProvider.setCustomParameters({'allow_signup': 'false'});
+  // Hide signin and show loading
+  toggleSigninLoading(true);
+  // Start OAuth dance
+  firebase.auth().signInWithPopup(githubProvider).then((result) => {
+    //if(result.credential) {}
+    toggleSigninLoading(false);
+  });
+}
+
+/**
+ * Any time there's a user state change (e.g, signin/signout), we'll
+ * handle here.
+ * @param {Object} user 
+ */
+function handleStateChange(user) {
+  const {pathname} = window.location;
+  // No user or user wishes to signout
+  if (!user || pathname === '/signout') {
+    signout();
+    return;
+  }
+  // At this point, user must be authenticated, so show the home page,
+  // also fix the path if needed.
+  if (pathname === '/signin')
+    history.replaceState({}, '', '/');
+  loadHome();  
+}
 
 ready(() => {
+  window.onpopstate = (evt) => {
+    // Whenever the browser nav back/forward, check if we need to update UI
+    handleStateChange(firebase.auth().currentUser);
+  }
+  
+  // When a user is signed in/out, update UI appropriately
+  firebase.auth().onAuthStateChanged(handleStateChange);
+  
+  // Handle signin out click
+  el('signout-link').addListener('click', (ev) => {
+    ev.preventDefault();
+    signout();
+  });
+
+  // Handle signing in click
+  el('signin-btn').addListener('click', signin);
+
   // The overloaded input field that holds search terms or URLs
   const termOrUrlInputEl = el('term-or-url-input');
 
