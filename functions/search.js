@@ -1,4 +1,6 @@
 const firebase = require('firebase-admin');
+const functions = require('firebase-functions');
+
 
 const DEFAULT_RESULT_SIZE = 10;
 
@@ -89,18 +91,41 @@ const search = (term, startAt, limit) => {
   return findTermPageIds(term, startAt, limit).then(getPages);
 }
 
-exports.handler = async (req, res) => {
-  const term = (req.query.term || '').trim().toLowerCase();
-  const startAt = req.query.at;
-  const limit = parseInt(req.query.limit) || DEFAULT_RESULT_SIZE;
+exports.handler = async ({term = '', startAt, limit = DEFAULT_RESULT_SIZE}, context) => {
+  console.log('=========>', context.auth)
+  if (!context.auth) {
+    //throw new functions.https.HttpsError('unauthenticated', 'Missing user authentication!');
+  }
+  //const db = firebase.firestore();
+  //db.settings({host: "localhost:8080", ssl: false})
+
+  term = term.trim().toLowerCase();
+  limit = parseInt(limit);
+
+  console.log("query==>", startAt, term, limit)
 
   try {
-    const pages = term 
-      ? await search(term, startAt, limit) 
+    return term 
+      ? await search(term, startAt, limit)
       : await listPages(startAt, limit);
-    return res.status(200).send(pages);
-  } catch(error) {
-    console.error(`Caught error while searching: ${term}`, error);
-    res.status(500).send();
+  } catch (error) {
+    console.log(error);
+    throw new functions.https.HttpsError('internal', `Caught error while searching: ${term}`, error);
   }
 };
+
+// exports.handler = async (req, res) => {
+//   const term = (req.query.term || '').trim().toLowerCase();
+//   const startAt = req.query.at;
+//   const limit = parseInt(req.query.limit) || DEFAULT_RESULT_SIZE;
+
+//   try {
+//     const pages = term 
+//       ? await search(term, startAt, limit) 
+//       : await listPages(startAt, limit);
+//     return res.status(200).send(pages);
+//   } catch(error) {
+//     console.error(`Caught error while searching: ${term}`, error);
+//     res.status(500).send();
+//   }
+// };
