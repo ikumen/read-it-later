@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const firebase = require('firebase-admin');
 
-// fetcher, indexer, search are dependent on Firebase being initialize
+// fetcher, indexer, search and create are dependent on Firebase being initialize
 if (firebase.apps.length == 0) {
   firebase.initializeApp();
 }
@@ -9,24 +9,7 @@ if (firebase.apps.length == 0) {
 const fetcher = require('./fetcher');
 const indexer = require('./indexer');
 const search = require('./search');
-
-/**
- * 
- * @param {Object} req 
- * @param {Object} res 
- * @param {Function} handler 
- */
-const corsFilter = async (req, res, handler) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  if (req.method === 'OPTIONS') {
-    res.set('Access-Control-Allow-Methods', 'GET');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    res.set('Access-Control-Max-Age', '3600');
-    res.status(204).send('');    
-  } else {
-    await handler(req, res);
-  }
-}
+const create = require('./create');
 
 /**
  * Firestore triggered Function that takes newly created web page document
@@ -42,4 +25,12 @@ exports.fetcher = functions.firestore.document('pages/{pageId}').onCreate(fetche
  */
 exports.indexer = functions.firestore.document('pages/{pageId}').onUpdate(indexer.handler);
 
-exports.search = functions.https.onRequest((req, res) => corsFilter(req, res, search.handler));
+/**
+ * Handler for searching terms in bookmarked web page contents.
+ */
+exports.search = functions.https.onCall(search.handler);
+
+/**
+ * Handler for bookmarking a web page (e.g. save a page document with url of web page).
+ */
+exports.create = functions.https.onCall(create.handler);
