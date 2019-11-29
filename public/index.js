@@ -43,8 +43,9 @@ const el = (id, tagName, parent) => {
       return props;
     },
     clearListeners: () => {
-      for(const name in _el.__listeners) 
+      for(const name in _el.__listeners) {
         _el.removeEventListener(name, _el.__listeners[name], false);
+      }
       return props;
     }
   }
@@ -86,6 +87,7 @@ const MSG_CLASS = 'bg-light-green';
 const db = firebase.firestore();
 const functions = firebase.functions();
 const isDev = window.location.hostname === 'localhost';
+let moreResultsEl;
 
 if (isDev) {
   // Use the emulator if we in development, it's kinda hacky but see:
@@ -123,8 +125,8 @@ function clearResults() {
 }
 
 function displayResults(pages, clear) {
-  const moreResultsEl = el('more-results');
-  moreResultsEl.addClass('dn');
+  moreResultsEl.addClass('dn')
+    .clearListeners();
 
   const resultsEl = el('results-list');
   if (clear) {
@@ -145,15 +147,14 @@ function displayResults(pages, clear) {
   }
 
   if (pages.length > i) {
-    console.log(pages[i])
-    el('more-results')
-      .removeClass('dn')
+    moreResultsEl
       .clearListeners()
       .addListener('click', () => {
         const term = el('term-or-url-input').get().value;
         search(term, pages[i].id, false)
       })
-  }
+      .removeClass('dn')
+    }
 }
 
 function showMessage(msg, {isError = false, autoClose = false}) {
@@ -269,7 +270,6 @@ function signin() {
  */
 function handleStateChange(user) {
   const {pathname} = window.location;
-  console.log('user===', user)
   // No user or user wishes to signout
   if (!user || pathname === '/signout') {
     signout();
@@ -320,4 +320,6 @@ ready(() => {
 
   // Register handler to dismiss errors
   el('close-msg-btn').addListener('click', hideMessage);
+
+  moreResultsEl = el('more-results');
 });
