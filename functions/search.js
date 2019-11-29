@@ -1,7 +1,6 @@
 const firebase = require('firebase-admin');
 const functions = require('firebase-functions');
 
-
 const DEFAULT_RESULT_SIZE = 10;
 
 /**
@@ -34,6 +33,7 @@ const getPages = (ids) => {
  * @param {Number} limit the result set size
  */
 const listPages = (startAt, limit) => {
+  console.log('===> listing pages')
   const db = firebase.firestore();
 
   const pagesCol = db.collection('pages');
@@ -42,8 +42,10 @@ const listPages = (startAt, limit) => {
     .limit(limit)
 
   const results = startAt 
-    ? pagesCol.doc(startAt).get()
-        .then(snapshot => query.startAt(snapshot).get())
+    ? pagesCol.doc(startAt).get().then(snapshot => {
+        console.log(startAt)
+        console.log(snapshot)
+        return query.startAt(snapshot).get()})
     : query.get();
 
   return results.then(snapshot => {
@@ -88,21 +90,22 @@ const findTermPageIds = async (term, startAt, limit) => {
  * @param {Number} limit the result set size
  */
 const search = (term, startAt, limit) => {
+  console.log('===> searching ...')
   return findTermPageIds(term, startAt, limit).then(getPages);
 }
 
+/**
+ * Handles searching for given term through all the bookmarked web page contents.
+ * @param {Object} data 
+ * @param {Object} context https://firebase.google.com/docs/reference/functions/cloud_functions_.eventcontext
+ */
 exports.handler = async ({term = '', startAt, limit = DEFAULT_RESULT_SIZE}, context) => {
-  console.log('=========>', context.auth)
   if (!context.auth) {
-    //throw new functions.https.HttpsError('unauthenticated', 'Missing user authentication!');
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication is required!');
   }
-  //const db = firebase.firestore();
-  //db.settings({host: "localhost:8080", ssl: false})
 
   term = term.trim().toLowerCase();
   limit = parseInt(limit);
-
-  console.log("query==>", startAt, term, limit)
 
   try {
     return term 
@@ -110,22 +113,7 @@ exports.handler = async ({term = '', startAt, limit = DEFAULT_RESULT_SIZE}, cont
       : await listPages(startAt, limit);
   } catch (error) {
     console.log(error);
-    throw new functions.https.HttpsError('internal', `Caught error while searching: ${term}`, error);
+    throw new functions.https.HttpsError('internal', `Caught error while searching: ${term}, ${error}`);
   }
 };
 
-// exports.handler = async (req, res) => {
-//   const term = (req.query.term || '').trim().toLowerCase();
-//   const startAt = req.query.at;
-//   const limit = parseInt(req.query.limit) || DEFAULT_RESULT_SIZE;
-
-//   try {
-//     const pages = term 
-//       ? await search(term, startAt, limit) 
-//       : await listPages(startAt, limit);
-//     return res.status(200).send(pages);
-//   } catch(error) {
-//     console.error(`Caught error while searching: ${term}`, error);
-//     res.status(500).send();
-//   }
-// };

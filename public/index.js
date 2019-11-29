@@ -78,20 +78,29 @@ function isValidURL(url) {
       && host !== window.location.hostname);
 }
 
+const DEFAULT_RESULT_SIZE = 2;
+const ERR_CLASS = 'bg-light-red';
+const MSG_CLASS = 'bg-light-green';
 
-// Get a reference to the Firestore DB, assuming Firebase scripts were loaded before this.
+// Get a reference Firebase services, assuming Firebase scripts were loaded before this.
 const db = firebase.firestore();
 const functions = firebase.functions();
-const projectId = 'ritl-app';
-const DEFAULT_RESULT_SIZE = 10;
+const isDev = window.location.hostname === 'localhost';
 
-let searchEndpoint = 'https://us-central1-ritl-app-dev.cloudfunctions.net/search';
-if (window.location.hostname === 'localhost') {
+if (isDev) {
   // Use the emulator if we in development, it's kinda hacky but see:
   // https://firebase.google.com/docs/emulator-suite/connect_and_prototype
   db.settings({ host: "localhost:8080", ssl: false });
   functions.useFunctionsEmulator('http://localhost:5001');
-  searchEndpoint = `http://localhost:5001/${projectId}-dev/us-central1/search`;  
+}
+
+function handleCallableError({code, message, details}) {
+  if (code === 'unauthenticated') {
+    signout();
+  } else {
+    showMessage(message, {isError: true});
+    if (isDev) console.log(details);
+  }
 }
 
 /**
@@ -100,17 +109,13 @@ if (window.location.hostname === 'localhost') {
  * @param {Object} page
  * @param {String} page.url address of web page to add
  */
-function addPage({url}) {
-  if (!isValidURL(url)) {
-    alert(`Not a valid URL: ${url}`);
-  } else {
-    db.collection('pages').add({
-      url,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+function addPage(page) {
+  functions.httpsCallable('create')(page)
+    .then(resp => {
+      el('term-or-url-input').get().value = '';
+      showMessage(`Bookmarked added: ${page.url}`, {autoClose: true});
     })
-    .then(resp => console.log(`Cool, we just added: ${url}, resp=`, resp))
-    .catch(err => console.error(`Oh noes, error while adding: ${url},`, err));
-  }
+    .catch(handleCallableError);
 }
 
 function clearResults() {
@@ -140,6 +145,7 @@ function displayResults(pages, clear) {
   }
 
   if (pages.length > i) {
+    console.log(pages[i])
     el('more-results')
       .removeClass('dn')
       .clearListeners()
@@ -150,14 +156,22 @@ function displayResults(pages, clear) {
   }
 }
 
-function displayError(error) {
-  el('errorMessages').innerHtml(error);
-  el('errors').removeClass('dn');
+function showMessage(msg, {isError = false, autoClose = false}) {
+  el('message').innerHtml(msg);
+  el('messages')
+    .addClass(isError ? ERR_CLASS : MSG_CLASS)  
+    .removeClass('dn');
+  if (autoClose) {
+    setTimeout(hideMessage, 2000);
+  }
 }
 
-function dismissError(errors) {
-  el('errorMessages').innerHtml('');
-  el('errors').addClass('dn');
+function hideMessage() {
+  el('message').innerHtml(''); 
+  el('messages')
+    .addClass('dn')
+    .removeClass(`${ERR_CLASS} ${MSG_CLASS}`);
+    
 }
 
 /**
@@ -172,22 +186,14 @@ function search(term, startAt, isNew=true) {
     .replace(/\w|_/g,'') // remove all non alpha numeric chars
     .toLowerCase();        
   // Build the cursor param
-  startAt = startAt ? `&at=${startAt}` : '';
+  startAt = startAt || '';
   // Set the number of results to return
   const limit = DEFAULT_RESULT_SIZE + 1;
 
   // Do search
-
-  // fetch(`${searchEndpoint}?term=${term}${startAt}&limit=${DEFAULT_RESULT_SIZE+1}`)
-  //   .then(res => res.json())
-  //   .then(pages => displayResults(pages, isNew))
-  //   .catch(displayError);
-  //func
-  //firebase.auth().currentUser.getIdToken(true).then(idToken => {
-    functions.httpsCallable('search')({term, startAt, limit})
-    .then(pages => displayResults(pages, isNew))
-    .catch(error => displayError([error.message, error.details].join(', ')));
-  //})
+  functions.httpsCallable('search')({term, startAt, limit})
+  .then(resp => displayResults(resp.data, isNew))
+  .catch(error => showMessage(error.message, {isError: true}));
 }
 
 /**
@@ -263,6 +269,7 @@ function signin() {
  */
 function handleStateChange(user) {
   const {pathname} = window.location;
+  console.log('user===', user)
   // No user or user wishes to signout
   if (!user || pathname === '/signout') {
     signout();
@@ -312,5 +319,5 @@ ready(() => {
   });
 
   // Register handler to dismiss errors
-  el('close-errors-btn').addListener('click', dismissError);
+  el('close-msg-btn').addListener('click', hideMessage);
 });
