@@ -156,7 +156,7 @@ exports.handler = async (snapshot, context) => {
 
     // Generate PDF version of web page and save to FB Storage
     const pdf = await browserPage.pdf();
-    await storageService.save({id, url}, pdf);
+    await savePagePdfToStorage({id, url}, pdf);
   
   } catch (err) {
     console.error(err);
