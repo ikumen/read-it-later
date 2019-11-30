@@ -79,6 +79,9 @@ function isValidURL(url) {
       && host !== window.location.hostname);
 }
 
+// -----------------------------------------------
+// Start of main application 
+// -----------------------------------------------
 const DEFAULT_RESULT_SIZE = 2;
 const ERR_CLASS = 'bg-light-red';
 const MSG_CLASS = 'bg-light-green';
@@ -87,6 +90,10 @@ const MSG_CLASS = 'bg-light-green';
 const db = firebase.firestore();
 const functions = firebase.functions();
 const isDev = window.location.hostname === 'localhost';
+
+// Need to scope this here instead of local function, because we re-attach
+// the same event listener multiple times with slightly different params,
+// and having it global makes it easier to clear the listeners.
 let moreResultsEl;
 
 if (isDev) {
@@ -120,10 +127,18 @@ function addPage(page) {
     .catch(handleCallableError);
 }
 
+/**
+ * Helper for clearing search results.
+ */
 function clearResults() {
   el('results-list').innerHtml('');
 }
 
+/**
+ * Helper for display search results.
+ * @param {Array} pages 
+ * @param {Boolean} clear 
+ */
 function displayResults(pages, clear) {
   moreResultsEl.addClass('dn')
     .clearListeners();
@@ -153,17 +168,17 @@ function displayResults(pages, clear) {
         const term = el('term-or-url-input').get().value;
         search(term, pages[i].id, false)
       })
-      .removeClass('dn')
+      .removeClass('dn');
     }
 }
 
-function showMessage(msg, {isError = false, autoClose = false}) {
+function showMessage(msg, opts = {isError: false, autoClose: false}) {
   el('message').innerHtml(msg);
   el('messages')
-    .addClass(isError ? ERR_CLASS : MSG_CLASS)  
+    .addClass(opts.isError ? ERR_CLASS : MSG_CLASS)  
     .removeClass('dn');
-  if (autoClose) {
-    setTimeout(hideMessage, 2000);
+  if (opts.autoClose) {
+    setTimeout(hideMessage, 3000);
   }
 }
 
@@ -172,7 +187,6 @@ function hideMessage() {
   el('messages')
     .addClass('dn')
     .removeClass(`${ERR_CLASS} ${MSG_CLASS}`);
-    
 }
 
 /**
@@ -183,16 +197,22 @@ function hideMessage() {
  */
 function search(term, startAt, isNew=true) {
   // Clean up our search term 
-  term = (term || '').trim() // no starting or trailing spaces
-    .replace(/\w|_/g,'') // remove all non alpha numeric chars
-    .toLowerCase();        
+  console.log('term start=', term)
+  const sanitizedTerm = (term || '').trim() // no starting or trailing spaces
+    .replace(/\W|_/g,'') // remove all non alpha numeric chars
+    .toLowerCase();
+          
+  if (sanitizedTerm && sanitizedTerm !== term) {
+    showMessage(`Removed special chars from search term: "${sanitizedTerm}"`)
+  }
+
   // Build the cursor param
   startAt = startAt || '';
   // Set the number of results to return
   const limit = DEFAULT_RESULT_SIZE + 1;
 
   // Do search
-  functions.httpsCallable('search')({term, startAt, limit})
+  functions.httpsCallable('search')({sanitizedTerm, startAt, limit})
   .then(resp => displayResults(resp.data, isNew))
   .catch(error => showMessage(error.message, {isError: true}));
 }
