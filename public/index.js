@@ -29,6 +29,9 @@ const el = (id, tagName, parent) => {
       cls.split(' ').forEach(c => _el.classList.remove(c));
       return props;
     },
+    isEmpty: () => {
+      return _el.innerHTML === '';
+    },
     appendChild: (child) => {
       _el.appendChild(child);
       return props;
@@ -161,12 +164,20 @@ function displayResults(pages, clear) {
     i++;
   }
 
-  if (pages.length > i) {
+  // Handle no results
+  if (pages.length == 0 && resultsEl.isEmpty()) {
+    el('no-more', 'li', resultsEl)
+      .innerHtml(`
+        <h3 class="fl w-100 fw3 mv2">No matching results found</h3>
+      `);
+  } 
+  // Handle additional results to get
+  else if (pages.length > i) {
     moreResultsEl
       .clearListeners()
       .addListener('click', () => {
         const term = el('term-or-url-input').get().value;
-        search(term, pages[i].id, false)
+        search(term, pages[i].id, false); 
       })
       .removeClass('dn');
     }
@@ -195,15 +206,14 @@ function hideMessage() {
  * @param {String} startAt starting cursor for pagination
  * @param {Boolean} isNew indicate whether we are starting a new search or next resultset
  */
-function search(term, startAt, isNew=true) {
+function search(unsanitizedTerm, startAt, isNew=true) {
   // Clean up our search term 
-  console.log('term start=', term)
-  const sanitizedTerm = (term || '').trim() // no starting or trailing spaces
+  const term = (unsanitizedTerm || '').trim() // no starting or trailing spaces
     .replace(/\W|_/g,'') // remove all non alpha numeric chars
     .toLowerCase();
           
-  if (sanitizedTerm && sanitizedTerm !== term) {
-    showMessage(`Removed special chars from search term: "${sanitizedTerm}"`)
+  if (term && term !== unsanitizedTerm) {
+    showMessage(`Removed special chars from search term: "${term}"`)
   }
 
   // Build the cursor param
@@ -212,7 +222,7 @@ function search(term, startAt, isNew=true) {
   const limit = DEFAULT_RESULT_SIZE + 1;
 
   // Do search
-  functions.httpsCallable('search')({sanitizedTerm, startAt, limit})
+  functions.httpsCallable('search')({term, startAt, limit})
   .then(resp => displayResults(resp.data, isNew))
   .catch(error => showMessage(error.message, {isError: true}));
 }
@@ -303,6 +313,10 @@ function handleStateChange(user) {
 }
 
 ready(() => {
+  // The overloaded input field that holds search terms or URLs
+  const termOrUrlInputEl = el('term-or-url-input');
+  moreResultsEl = el('more-results');
+
   window.onpopstate = (evt) => {
     // Whenever the browser nav back/forward, check if we need to update UI
     handleStateChange(firebase.auth().currentUser);
@@ -320,11 +334,11 @@ ready(() => {
   // Handle signing in click
   el('signin-btn').addListener('click', signin);
 
-  // The overloaded input field that holds search terms or URLs
-  const termOrUrlInputEl = el('term-or-url-input');
-
   // Prevent default form submit, we explicitly handle add URL/searching
-  el('search-n-add-form').addListener('submit', ev => ev.preventDefault());
+  el('search-n-add-form').addListener('submit', (ev) => {
+    ev.preventDefault();
+    search(termOrUrlInputEl.get().value);
+  });
 
   // Handle adding web page
   el('add-page-btn').addListener('click', () => {
@@ -333,13 +347,9 @@ ready(() => {
   });
 
   // Handle searching for term and displaying results
-  el('search-btn').addListener('click', () => {
-    const term = termOrUrlInputEl.get().value;
-    search(term);
-  });
+  el('search-btn').addListener('click', search(termOrUrlInputEl.get().value));
 
   // Register handler to dismiss errors
   el('close-msg-btn').addListener('click', hideMessage);
 
-  moreResultsEl = el('more-results');
 });
