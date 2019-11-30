@@ -24,10 +24,6 @@ const isValidUrl = (url) => {
  * @param {Object} context https://firebase.google.com/docs/reference/functions/cloud_functions_.eventcontext
  */
 exports.handler = (data, context) => {
-  // Only authenticated users
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Authentication is required!');
-  }
   // Validate URL
   const {url} = data;
   if (!isValidUrl(url)) {

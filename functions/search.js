@@ -1,6 +1,5 @@
 const firebase = require('firebase-admin');
 const functions = require('firebase-functions');
-
 const DEFAULT_RESULT_SIZE = 10;
 
 /**
@@ -33,9 +32,7 @@ const getPages = (ids) => {
  * @param {Number} limit the result set size
  */
 const listPages = (startAt, limit) => {
-  console.log('===> listing pages')
   const db = firebase.firestore();
-
   const pagesCol = db.collection('pages');
   const query = pagesCol
     .orderBy('createdAt', 'desc')
@@ -43,8 +40,6 @@ const listPages = (startAt, limit) => {
 
   const results = startAt 
     ? pagesCol.doc(startAt).get().then(snapshot => {
-        console.log(startAt)
-        console.log(snapshot)
         return query.startAt(snapshot).get()})
     : query.get();
 
@@ -90,7 +85,6 @@ const findTermPageIds = async (term, startAt, limit) => {
  * @param {Number} limit the result set size
  */
 const search = (term, startAt, limit) => {
-  console.log('===> searching ...')
   return findTermPageIds(term, startAt, limit).then(getPages);
 }
 
@@ -100,10 +94,7 @@ const search = (term, startAt, limit) => {
  * @param {Object} context https://firebase.google.com/docs/reference/functions/cloud_functions_.eventcontext
  */
 exports.handler = async ({term = '', startAt, limit = DEFAULT_RESULT_SIZE}, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Authentication is required!');
-  }
-
+  
   term = term.trim().toLowerCase();
   limit = parseInt(limit);
 
@@ -112,7 +103,7 @@ exports.handler = async ({term = '', startAt, limit = DEFAULT_RESULT_SIZE}, cont
       ? await search(term, startAt, limit)
       : await listPages(startAt, limit);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     throw new functions.https.HttpsError('internal', `Caught error while searching: ${term}, ${error}`);
   }
 };
