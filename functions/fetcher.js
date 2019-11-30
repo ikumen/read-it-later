@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const firebase = require('firebase-admin');
+const functions = require('firebase-functions');
 
 /**
  * Helper for determining if the child requests should be aborted. We abort
@@ -129,7 +130,10 @@ savePagePdfToStorage = async ({id, url}, contents) => {
  * @param {Object} snapshot https://firebase.google.com/docs/reference/node/firebase.firestore.DocumentSnapshot
  * @param {Object} context https://firebase.google.com/docs/reference/functions/cloud_functions_.eventcontext.html
  */
-exports.handler = async (snapshot, context) => {
+exports.handler = functions.firestore
+  .document('pages/{pageId}')
+  .onCreate(async (snapshot, context) => 
+{
   const {url} = snapshot.data();
   const id = context.params.pageId;
 
@@ -164,4 +168,4 @@ exports.handler = async (snapshot, context) => {
     await browser.close();
   }
 
-};
+});

@@ -1,3 +1,4 @@
+const functions = require('firebase-functions');
 const firebase = require('firebase-admin');
 
 const {STOP_WORDS} = require('./stopwords');
@@ -27,7 +28,10 @@ const tokenize = (text) => {
  */
 const logBatchResults = (results) => console.log('Batched:', results);
 
-exports.handler = async (change, context) => {
+exports.handler = functions.firestore
+  .document('pages/{pageId}')
+  .onUpdate(async (change, context) => 
+{
   const {id, text, title} = {
     id: change.after.id,
     ...change.after.data()
@@ -56,4 +60,4 @@ exports.handler = async (change, context) => {
     batch.commit().then(logBatchResults);
   }
 
-}
+});
