@@ -2,6 +2,11 @@ const puppeteer = require('puppeteer');
 const firebase = require('firebase-admin');
 const functions = require('firebase-functions');
 
+const runtimeOpts = {
+  timeoutSeconds: 30,
+  memory: '1GB'
+}
+
 /**
  * Helper for determining if the child requests should be aborted. We abort
  * any request for media content--as we cannot extract text or generate PDFs 
@@ -21,7 +26,7 @@ const abortMediaInterceptedRequestHandler = (interceptedRequest) => {
     url.endsWith('.mp4') || 
     url.endsWith('.wmv')) 
   {
-    console.log(`Aborting request for: ${url}`);
+    console.warn(`Aborting request for: ${url}`);
     interceptedRequest.abort();
   } else {
     interceptedRequest.continue();
@@ -130,9 +135,11 @@ savePagePdfToStorage = async ({id, url}, contents) => {
  * @param {Object} snapshot https://firebase.google.com/docs/reference/node/firebase.firestore.DocumentSnapshot
  * @param {Object} context https://firebase.google.com/docs/reference/functions/cloud_functions_.eventcontext.html
  */
-exports.handler = functions.firestore
-  .document('pages/{pageId}')
-  .onCreate(async (snapshot, context) => 
+exports.handler = functions
+  .runWith(runtimeOpts)
+    .firestore
+      .document('pages/{pageId}')
+      .onCreate(async (snapshot, context) => 
 {
   const {url} = snapshot.data();
   const id = context.params.pageId;
