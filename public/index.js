@@ -232,12 +232,18 @@ function search(unsanitizedTerm, startAt, isNew=true) {
  * @param {boolean} show 
  */
 function toggleSigninModal(show=true) {
+  const signinModal = el('signin-modal'),
+    signoutLink = el('signout-link'),
+    header = el('header');
+
   if (show) {
-    el('signin-modal').addClass('open');
-    el('signout-link').addClass('dn');  
+    signinModal.addClass('open');
+    signoutLink.addClass('dn');
+    header.addClass('dn');
   } else {
-    el('signin-modal').removeClass('open');
-    el('signout-link').removeClass('dn');  
+    signinModal.removeClass('open');
+    header.removeClass('dn');
+    signoutLink.removeClass('dn');  
   }
 }
 
@@ -246,12 +252,14 @@ function toggleSigninModal(show=true) {
  * @param {boolean} show 
  */
 function toggleSigninLoading(show = true) {
+  const signinBtn = el('signin-btn'),
+    signinLoading = el('signin-loading');
   if (show) {
-    el('signin-btn').addClass('dn');
-    el('signin-loading').removeClass('dn');
+    signinBtn.addClass('dn');
+    signinLoading.removeClass('dn');
   } else {
-    el('signin-btn').removeClass('dn');
-    el('signin-loading').addClass('dn');
+    signinBtn.removeClass('dn');
+    signinLoading.addClass('dn');
   }
 }
 
@@ -309,6 +317,7 @@ function handleStateChange(user) {
   // also fix the path if needed.
   if (pathname === '/signin')
     history.replaceState({}, '', '/');
+
   loadHome();  
 }
 
@@ -341,13 +350,10 @@ ready(() => {
   });
 
   // Handle adding web page
-  el('add-page-btn').addListener('click', () => {
-    const url = termOrUrlInputEl.get().value;
-    addPage({url});
-  });
+  el('add-page-btn').addListener('click', () => addPage({url: termOrUrlInputEl.get().value}));
 
   // Handle searching for term and displaying results
-  el('search-btn').addListener('click', search(termOrUrlInputEl.get().value));
+  el('search-btn').addListener('click', () => search(termOrUrlInputEl.get().value));
 
   // Register handler to dismiss errors
   el('close-msg-btn').addListener('click', hideMessage);
