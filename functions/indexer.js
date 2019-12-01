@@ -26,7 +26,7 @@ const tokenize = (text) => {
 /**
  * @param {Object} results 
  */
-const logBatchResults = (results) => console.log('Batched:', results);
+const logBatchResults = (results) => console.log('Batched complete.' /*, results*/);
 
 exports.handler = functions.firestore
   .document('pages/{pageId}')

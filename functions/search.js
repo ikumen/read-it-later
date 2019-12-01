@@ -94,7 +94,6 @@ const search = (term, startAt, limit) => {
  * @param {Object} context https://firebase.google.com/docs/reference/functions/cloud_functions_.eventcontext
  */
 exports.handler = async ({term = '', startAt, limit = DEFAULT_RESULT_SIZE}, context) => {
-  
   term = term.trim().toLowerCase();
   limit = parseInt(limit);
 
