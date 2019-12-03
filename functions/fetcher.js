@@ -93,14 +93,15 @@ const getMetaDescription = (metas) => {
  * @param {String} page.title
  * @param {String} page.text
  */
-const savePageToFirestore = async ({id, title, description, text}) => {
+const savePageToFirestore = async (userId, {id, title, description, text}) => {
   const db = firebase.firestore();
-  return db.collection('pages').doc(id)
-    .update({
-      title, 
-      description,
-      text
-    });
+  const userRef = db.collection('users').doc(userId);
+
+  await userRef.collection('pages').doc(id)
+    .update({title, description});
+
+  return userRef.collection('texts').doc(id)
+    .set({text});
 }
 
 /**
@@ -138,11 +139,12 @@ savePagePdfToStorage = async ({id, url}, contents) => {
 exports.handler = functions
   .runWith(runtimeOpts)
     .firestore
-      .document('pages/{pageId}')
+      .document('users/{userId}/pages/{pageId}')
       .onCreate(async (snapshot, context) => 
 {
   const {url} = snapshot.data();
-  const id = context.params.pageId;
+  const userId = context.params.userId;
+  const pageId = context.params.pageId;
 
   let browser;
 
@@ -163,7 +165,7 @@ exports.handler = functions
     const text = await browserPage.$eval('*', el => el.innerText);
     const metas = await browserPage.evaluate(extractMeta);
     const description = getMetaDescription(metas) || makeDescription(text);
-    await savePageToFirestore({id, title, description, text});
+    await savePageToFirestore(userId, {id: pageId, title, description, text});
 
     // Generate PDF version of web page and save to FB Storage
     const pdf = await browserPage.pdf();
