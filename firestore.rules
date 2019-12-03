@@ -1,9 +1,27 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Block all client access, only use the Admin SDK
-    match /{document=**} {
-      allow read, write: if false;
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if request.auth.uid != null;
+
+      // Creating pages is the only action that happens directly client-side
+      match /pages/{document=**} {
+        allow read, update, delete: if isOwner(userId);
+        // Don't trust client, an example of how to validate required fields
+        allow create: if isOwner(userId) && request.resource.data.url.trim() != ''; 
+      }
+      match /texts/{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+      match /terms/{document=**} {
+        allow read, write: if isOwner(userId);
+      }
     }
   }
 }
