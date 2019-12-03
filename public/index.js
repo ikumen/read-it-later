@@ -1,3 +1,10 @@
+/**
+ * Helper for working with and creating HTMLElements.
+ * 
+ * @param {String} id of element to lookup or if tagname was given, the id of the newly created element
+ * @param {String} tagName type of element to create
+ * @param {HTMLElement} parent optional parent to assign this new element.
+ */
 const el = (id, tagName, parent) => {
   const _el = tagName
     ? document.createElement(tagName)
@@ -7,6 +14,8 @@ const el = (id, tagName, parent) => {
     throw new Error(`No element with id: ${id}`);
   }
 
+  // If we're creating a new element, give it an id and assign 
+  // to a parent node if applicable
   if (tagName) {
     _el.id = id;
     if (parent) {
@@ -14,6 +23,7 @@ const el = (id, tagName, parent) => {
     }
   }
 
+  // Keep track of listeners on this element, in case we need to remove
   _el.__listeners = {};
 
   const props = {
@@ -85,7 +95,7 @@ function isValidURL(url) {
 // -----------------------------------------------
 // Start of main application 
 // -----------------------------------------------
-const DEFAULT_RESULT_SIZE = 2;
+const DEFAULT_RESULT_SIZE = 10;
 const ERR_CLASS = 'bg-light-red';
 const MSG_CLASS = 'bg-light-green';
 
@@ -121,13 +131,22 @@ function handleCallableError({code, message, details}) {
  * @param {Object} page
  * @param {String} page.url address of web page to add
  */
-function addPage(page) {
-  functions.httpsCallable('create')(page)
-    .then(resp => {
+function addPage({url}) {
+  if(!isValidURL(url)) {
+    showMessage('Not a valid URL!', {isError: true})
+    return;
+  }
+
+  const user = firebase.auth().currentUser;
+  const page = {url, createdAt: firebase.firestore.FieldValue.serverTimestamp()};
+
+  db.collection('users').doc(user.uid)
+      .collection('pages').add(page)
+    .then(() => {
       el('term-or-url-input').get().value = '';
-      showMessage(`Bookmarked added: ${page.url}`, {autoClose: true});
+      showMessage(`Bookmarked successful: ${url}`, {autoClose: true});
     })
-    .catch(handleCallableError);
+    .catch(error => showMessage(error.message, {isError: true}));
 }
 
 /**
@@ -201,19 +220,25 @@ function hideMessage() {
 }
 
 /**
- * Search for the given term.
- * @param {String} term 
+ * Search for the given term, returning all pages if term is empty, for 
+ * the currently authenticated user.
+ * 
+ * @param {String} userId owner id of the resources to search through  
+ * @param {String} term the word to search for in the pages
  * @param {String} startAt starting cursor for pagination
- * @param {Boolean} isNew indicate whether we are starting a new search or next resultset
  */
-function search(unsanitizedTerm, startAt, isNew=true) {
+function search(term, startAt, isNew=true) {
+  // It's assumed we have an authenticated user at this point, otherwise
+  // we would have been redirect to signin page
+  const user = firebase.auth().currentUser;
+
   // Clean up our search term 
-  const term = (unsanitizedTerm || '').trim() // no starting or trailing spaces
+  const sanitizedTerm = (term || '').trim() // no starting or trailing spaces
     .replace(/\W|_/g,'') // remove all non alpha numeric chars
     .toLowerCase();
           
-  if (term && term !== unsanitizedTerm) {
-    showMessage(`Removed special chars from search term: "${term}"`)
+  if (sanitizedTerm && sanitizedTerm !== term) {
+    showMessage(`Removed special chars from search term: "${sanitizedTerm}"`)
   }
 
   // Build the cursor param
@@ -221,10 +246,83 @@ function search(unsanitizedTerm, startAt, isNew=true) {
   // Set the number of results to return
   const limit = DEFAULT_RESULT_SIZE + 1;
 
-  // Do search
-  functions.httpsCallable('search')({term, startAt, limit})
-  .then(resp => displayResults(resp.data, isNew))
-  .catch(error => showMessage(error.message, {isError: true}));
+  const results = sanitizedTerm === '' 
+    ? listPages(user.uid, {startAt, limit})
+    : findPagesByTerm(user.uid, sanitizedTerm, {startAt, limit});
+  
+  // Display our results if success, otherwise show the error
+  results
+    .then(pages => displayResults(pages, isNew))
+    .catch(error => showMessage(error.message, {isError: true}));
+}
+
+/**
+ * Find all pages that have the given term.
+ * 
+ * @param {String} userId owner id of the resources to search through 
+ * @param {String} term the word to search for in the pages 
+ * @param {Object} opts 
+ * @param {String} opts.startAt cursor to start at for paging 
+ * @param {Number} opts.limit number of results to return 
+ */
+function findPagesByTerm(userId, term, {startAt, limit}) {
+  const userRef = db.collection('users').doc(userId);
+  const userTermPagesRef = userRef.collection('terms').doc(term).collection('pages');
+
+  const query = userTermPagesRef
+      .orderBy('count', 'desc')
+      .limit(limit);
+
+  // Query for pages mapped to given term
+  const results = startAt 
+      // We're given a startAt cursor for paging, so return results from there
+      ? userTermPagesRef.doc(startAt).get()
+          .then(snapshot => query.startAt(snapshot).get())
+      : query.get();
+
+  return results
+    // For each term-to-page mapping, get and return the page ids
+    .then(snapshot => {
+      const pageIds = [];
+      snapshot.forEach(doc => pageIds.push(doc.id));
+      return pageIds;
+    })
+    // Load page documents by their ids
+    .then(pageIds => Promise.all(pageIds.map(id => 
+      // Given a page id, load the page
+      userRef.collection('pages').doc(id).get().then(doc => ({id, ...doc.data()}))  
+    )));
+}
+
+/**
+ * Return a list of pages belonging to the given user.
+ * 
+ * @param {String} userId owner id of resources to return 
+ * @param {Object} opts 
+ * @param {String} opts.startAt cursor to start at for paging 
+ * @param {Number} opts.limit number of results to return 
+ */
+function listPages(userId, {startAt, limit}) {
+  // Reference to the users/pages collection
+  const userPagesRef = db.collection('users').doc(userId).collection('pages');
+
+  const query = userPagesRef
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+
+  // Get all the pages
+  const results = startAt 
+    // We're given a startAt cursor for paging, so return results from there
+    ? userPagesRef.doc(startAt).get().then(snapshot => {
+        return query.startAt(snapshot).get()})
+    : query.get();
+
+  return results
+    .then(snapshot => {
+      const pages = [];
+      snapshot.forEach(doc => pages.push({id: doc.id, ...doc.data()}));
+      return pages;
+    });
 }
 
 /**

@@ -29,24 +29,32 @@ const tokenize = (text) => {
 const logBatchResults = (results) => console.log('Batched complete.' /*, results*/);
 
 exports.handler = functions.firestore
-  .document('pages/{pageId}')
-  .onUpdate(async (change, context) => 
+  .document('users/{userId}/texts/{pageId}')
+  .onWrite(async (change, context) => 
 {
-  const {id, text, title} = {
-    id: change.after.id,
-    ...change.after.data()
-  };
+  if (context.eventType === 'providers/cloud.firestore/eventTypes/document.delete') {
+    // Nothing to do, document is being removed
+    return;
+  }
+
+  const userId = context.params.userId;
+  const pageId = context.params.pageId;
+  const {text} = {...change.after.data()};
 
   const db = firebase.firestore();
+  const userRef = db.collection('users').doc(userId);
   let batch = db.batch();
 
-  // Tokenize both the text and title
-  const terms = tokenize([text, title].join(' '));
+  // Break the text into terms (e.g. words)
+  const terms = tokenize(text);
   
   let i=0;
   for (const term in terms) {
-    const ref = db.collection('terms').doc(term).collection('pages').doc(id);
-    batch.set(ref, {
+    const termPagesRef = userRef
+      .collection('terms').doc(term)
+      .collection('pages').doc(pageId);
+
+    batch.set(termPagesRef, {
       count: terms[term]
     });
     
