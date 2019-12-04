@@ -26,7 +26,7 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
    * click "Register Application"
    * take note of the generated `Client ID` and `Client Secret`
 1. Add GitHub as OAuth Provider
-   * from Firebase console (https://console.firebase.google.com/project/<project id>/overview)
+   * from Firebase console `https://console.firebase.google.com/project/<project-id>/overview`
    * from left-hand menu, "Develop" -> "Authentication" -> "Sign-in method"
    * select GitHub, then "Enable" and add the `Client ID` and `Client Secret` from earlier
    * then "Save"
@@ -45,7 +45,7 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
    * `cd functions && npm install`
 1. Edit the `read-it-later/.firebaserc` file, and set your `project id` as the "default"
 1. Restrict access for yourself only (this was meant to be a personal app)
-   * `firebase functions:config:set security.authorized="<your email used to sign into GitHub>"
+   * `firebase functions:config:set security.authorized="<your email used to sign into GitHub>"`
 1. Deploy your project:
    * `firebase deploy`
 
