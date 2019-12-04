@@ -7,9 +7,7 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
 
 ### Prerequisite
 
-* you should be familiar with developing JavaScript applications (client and NodeJS)
 * have GitHub account, we use GitHub as an (OAuth provider](https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/)
-* and these instructions have only been tested on my local computer, running OSX
 
 ### Cool, Let's Get Started
 
