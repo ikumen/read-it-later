@@ -1,5 +1,5 @@
 # Read It Later
-A tiny, searchable, archivable, no-nonsense bookmarking app&mdash;a side project while I was learning [Firebase](//firebase.google.com). For personal/demo use, the app will run pretty much within the [free quota limits](https://firebase.google.com/docs/firestore/quotas#free-quota), YMMV.
+Simple, searchable, archivable, bookmarking app&mdash;a side project while I was learning [Firebase](//firebase.google.com). For personal/demo use, the app will run pretty much within the [free quota limits](https://firebase.google.com/docs/firestore/quotas#free-quota), YMMV.
 
 <img src="https://i.imgur.com/Axe1j80.png" width="400"> <img src="https://i.imgur.com/DPcpxdA.png" width="400">
 
