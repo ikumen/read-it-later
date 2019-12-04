@@ -1,7 +1,33 @@
 # Read It Later
 Simple, searchable, archivable, bookmarking app&mdash;a side project while I was learning [Firebase](//firebase.google.com). For personal/demo use, the app will run pretty much within the [free quota limits](https://firebase.google.com/docs/firestore/quotas#free-quota), YMMV.
 
-<img src="https://i.imgur.com/Axe1j80.png" width="400"> <img src="https://i.imgur.com/DPcpxdA.png" width="400">
+```
+                                                               [ WWW ]
+                                                                  |
+            .-----------------------------------------------------|---------------------. 
+            |                           Firebase Platform         |                     |
+            |-----------------------------------------------------|---------------------|
+            |                                                     |                     |
+            |            .----------------.      .------------.   |                     |
+ .---------------.       |    Firestore   |      | Fetcher Fn |   |                     |
+ | FB Hosted App |       |----------------|      |------------|   |     .------------.  |
+ |---------------|       |                |      |            |   |     | FB Storage |  |
+ | [Add Page URL] ---------> [ /pages ] --------------(url)-------/     |------------|  |
+ |               |       |              <---------- save text |         |            |  |
+ |               |       |                |   |  |  save pdf ---------------> .pdf   |  |
+ | [Search Term] ----------> [ /terms ]   |   |  .------------.         |            |  |
+ |               |       .-------|--------.   |                         .------------.  |
+ .---------------.               |            |  .-------------.                        |
+            |                    |            |  | Indexer Fn  |                        |
+            |                    |            |  |-------------|                        |
+            |                    |            |  |             |                        |
+            |                    |            \----- (text)    |                        |
+            |                    |               | build index |                        |
+            |                    \----------------  save terms |                        |
+            |                                    |             |                        |
+            |                                    .-------------.                        |
+            .---------------------------------------------------------------------------.
+``` 
 
 ## Quick Start
 
@@ -50,4 +76,6 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
    * `firebase deploy`
 
 Your app should be deployed to `https://<project id>.web.app`
- 
+
+<img src="https://i.imgur.com/Axe1j80.png" width="400"> <img src="https://i.imgur.com/DPcpxdA.png" width="400">
+
