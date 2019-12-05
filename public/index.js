@@ -1,96 +1,3 @@
-/**
- * Helper for working with and creating HTMLElements.
- * 
- * @param {String} id of element to lookup or if tagname was given, the id of the newly created element
- * @param {String} tagName type of element to create
- * @param {HTMLElement} parent optional parent to assign this new element.
- */
-const el = (id, tagName, parent) => {
-  const _el = tagName
-    ? document.createElement(tagName)
-    : document.getElementById(id);
-
-  if (_el == null) {
-    throw new Error(`No element with id: ${id}`);
-  }
-
-  // If we're creating a new element, give it an id and assign 
-  // to a parent node if applicable
-  if (tagName) {
-    _el.id = id;
-    if (parent) {
-      parent.appendChild(_el);
-    }
-  }
-
-  // Keep track of listeners on this element, in case we need to remove
-  _el.__listeners = {};
-
-  const props = {
-    get: () => _el,
-    addClass: (cls) => {
-      cls.split(' ').forEach(c => {
-        if (!_el.classList.contains(c))
-          _el.classList.add(c);
-      });
-      return props; // for chaining
-    },
-    removeClass: (cls) => {
-      cls.split(' ').forEach(c => _el.classList.remove(c));
-      return props;
-    },
-    isEmpty: () => {
-      return _el.innerHTML === '';
-    },
-    appendChild: (child) => {
-      _el.appendChild(child);
-      return props;
-    },
-    innerHtml: (html) => {
-      _el.innerHTML = html;
-      return props;
-    },
-    addListener: (name, handler) => {
-      _el.__listeners[name] = handler;
-      _el.addEventListener(name, handler, false);
-      return props;
-    },
-    clearListeners: () => {
-      for(const name in _el.__listeners) {
-        _el.removeEventListener(name, _el.__listeners[name], false);
-      }
-      return props;
-    }
-  }
-  return props;
-}
-
-/**
- * Helper that will defer executing a given function, until DOM is loaded.
- * @param {Function} fn to call when DOM has finished loading 
- */
-function ready (fn) {
-  if (document.readyState === "complete") {
-    fn();
-  } else {
-    document.addEventListener('DOMContentLoaded', fn);
-  }
-}
-
-/**
- * Very naive check for a valid URL. Must be http based
- * and NOT a local address.
- * 
- * @param {String} url to bookmark 
- */
-function isValidURL(url) {
-  const a = document.createElement('a');
-  a.href = url;
-  const {host = '', protocol = ''} = a;
-  return (protocol.startsWith('http') 
-      && !host.startsWith('localhost') 
-      && host !== window.location.hostname);
-}
 
 // -----------------------------------------------
 // Start of main application 
@@ -99,55 +6,11 @@ const DEFAULT_RESULT_SIZE = 10;
 const ERR_CLASS = 'bg-light-red';
 const MSG_CLASS = 'bg-light-green';
 
-// Get a reference Firebase services, assuming Firebase scripts were loaded before this.
-const db = firebase.firestore();
-const functions = firebase.functions();
-const isDev = window.location.hostname === 'localhost';
-
 // Need to scope this here instead of local function, because we re-attach
 // the same event listener multiple times with slightly different params,
 // and having it global makes it easier to clear the listeners.
 let moreResultsEl;
 
-if (isDev) {
-  // Use the emulator if we in development, it's kinda hacky but see:
-  // https://firebase.google.com/docs/emulator-suite/connect_and_prototype
-  db.settings({ host: "localhost:8080", ssl: false });
-  functions.useFunctionsEmulator('http://localhost:5001');
-}
-
-function handleCallableError({code, message, details}) {
-  if (code === 'unauthenticated') {
-    signout();
-  } else {
-    showMessage(message, {isError: true});
-    if (isDev) console.log(details);
-  }
-}
-
-/**
- * Add a new web page to the database.
- * 
- * @param {Object} page
- * @param {String} page.url address of web page to add
- */
-function addPage({url}) {
-  if(!isValidURL(url)) {
-    showMessage('Not a valid URL!', {isError: true})
-    return;
-  }
-
-  const user = firebase.auth().currentUser;
-  const page = {url, createdAt: firebase.firestore.FieldValue.serverTimestamp()};
-
-  db.collection('users').doc(user.uid)
-      .collection('pages').add(page)
-    .then(() => {
-      el('term-or-url-input').get().value = '';
-      showMessage(`Bookmarked successful: ${url}`, {autoClose: true});
-    })
-    .catch(error => showMessage(error.message, {isError: true}));
-}
 
 /**
  * Helper for clearing search results.
@@ -187,7 +50,7 @@ function displayResults(pages, clear) {
   if (pages.length == 0 && resultsEl.isEmpty()) {
     el('no-more', 'li', resultsEl)
       .innerHtml(`
-        <h3 class="fl w-100 fw3 mv2">No matching results found</h3>
+        <h3 class="fl w-100 fw3 mv2 tc">No matching results found</h3>
       `);
   } 
   // Handle additional results to get
@@ -419,6 +282,11 @@ function handleStateChange(user) {
   loadHome();  
 }
 
+function createBookmarkletScript() {
+  const {protocol, host} = window.location;
+  return encodeURI(`javascript:(function(){var w=window,d=document,e=encodeURIComponent,o=w.open('${protocol}//${host}/add?url='+e(d.location),'_ritl','left='+((w.screenX||w.screenLeft)+10)+',top='+((w.screenY||w.screenTop)+10)+',height=310,width=600,resizable=1,alwaysRaised=1,status=0');w.setTimeout(function(){o.focus()},400)})();`);
+}
+
 ready(() => {
   // The overloaded input field that holds search terms or URLs
   const termOrUrlInputEl = el('term-or-url-input');
@@ -448,7 +316,14 @@ ready(() => {
   });
 
   // Handle adding web page
-  el('add-page-btn').addListener('click', () => addPage({url: termOrUrlInputEl.get().value}));
+  el('add-page-btn').addListener('click', () => {
+    const url = termOrUrlInputEl.get().value;
+    termOrUrlInputEl.get().value = '';
+    addPage(url,
+      () => showMessage(`Bookmark successful: ${url}`, {autoClose: true}),
+      (err) => showMessage(err, {isError: true}) 
+    );
+  });
 
   // Handle searching for term and displaying results
   el('search-btn').addListener('click', () => search(termOrUrlInputEl.get().value));
@@ -456,4 +331,6 @@ ready(() => {
   // Register handler to dismiss errors
   el('close-msg-btn').addListener('click', hideMessage);
 
+  el('bookmarklet').get().href = createBookmarkletScript();
+  
 });

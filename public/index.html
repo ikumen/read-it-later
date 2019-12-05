@@ -108,7 +108,7 @@
       <div class="fl cf w-100 pt6-l pt5-m pt3-s tc white">
         <h1><i class="material-icons orange md-large v-mid">bookmark</i>Read it Later</h1>
         <p class="f3-ns f4">
-          Searchable, Archivable, No-Nonsense Bookmarking 
+          Searchable, Archivable, No-Nonsense Bookmarking
         </p>
         <div class="fl cf w-100 mt4">
           <span id="signin-btn" class="pv2 ph3 ml1 bw0 br1 pointer b--blue bg-green f6 f5-ns fw3 fw6-l white">Signin with GitHub</span>
@@ -121,12 +121,17 @@
     </main>
   </div>
 
-  <footer class="footer pt3 pb4 ph1 ph4-m ph6-l flex items-center gray bt b--light-gray">
-    <div class="w-50 fl f6">&copy; Thong Nguyen</div>
-    <div class="w-50 tr f6">
-      <a class="ml3 link" href="//github.com/ikumen/read-it-later">about</a>
-      <a class="ml3 link dn" href="/signout" id="signout-link">signout</a>
+  <footer class="footer">
+    <div class="fl w-100 pt3 pb3 ph1 ph3-m ph6-l tc black-50">
+      Add bookmarks more easily, just drag this <a class="ba pv1 ph2 br2 f6 link white bg-orange" id="bookmarklet" href="" title="Drag to bookmark toolbar">Read It Later</a> to your bookmarks toolbar.
     </div>
+    <div class="fl w-100 pt3 pb4 ph1 ph3-m ph6-l flex items-center gray bt b--light-gray">
+      <div class="w-20 fl f6 nowrap">&copy; Thong Nguyen</div>
+      <div class="w-80 tr f6">
+        <a class="ml3 link" href="//github.com/ikumen/read-it-later">about</a>
+        <a class="ml3 link dn" href="/signout" id="signout-link">signout</a>
+      </div>
+      </div>
   </footer>
 </div>  
 
@@ -135,11 +140,12 @@
 <!-- include only the Firebase features as you need -->
 <script defer src="/__/firebase/7.5.0/firebase-auth.js"></script>
 <script defer src="/__/firebase/7.5.0/firebase-firestore.js"></script>
-<script defer src="/__/firebase/7.5.0/firebase-functions.js"></script>
 <!-- initialize the SDK after all desired features are loaded -->
 <script defer src="/__/firebase/init.js"></script>
 
 <!-- Our web app script -->
+<script defer src="shared.js"></script>
 <script defer src="index.js"></script>
+
 </body>
 </html>
