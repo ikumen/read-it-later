@@ -77,5 +77,5 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
 
 Your app should be deployed to `https://<project id>.web.app`
 
-<img src="https://i.imgur.com/Axe1j80.png" width="400"> <img src="https://i.imgur.com/RXYNQh9.png" width="400">
+<img src="https://i.imgur.com/V91k5D3.png" width="400"> <img src="https://i.imgur.com/RXYNQh9.png" width="400">
 
