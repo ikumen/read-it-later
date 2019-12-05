@@ -33,7 +33,7 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
 
 ### Prerequisite
 
-* have GitHub account, we use GitHub as an (OAuth provider](https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/)
+* have GitHub account, we use GitHub as an [OAuth provider](https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/)
 
 ### Cool, Let's Get Started
 
@@ -77,5 +77,5 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
 
 Your app should be deployed to `https://<project id>.web.app`
 
-<img src="https://i.imgur.com/Axe1j80.png" width="400"> <img src="https://i.imgur.com/DPcpxdA.png" width="400">
+<img src="https://i.imgur.com/Axe1j80.png" width="400"> <img src="https://i.imgur.com/RXYNQh9.png" width="400">
 
