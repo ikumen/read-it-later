@@ -18,6 +18,10 @@
       {
         "source": "/signout",
         "destination": "/index.html"
+      },
+      {
+        "source": "/add",
+        "destination": "/add.html"
       }
     ]
   },
