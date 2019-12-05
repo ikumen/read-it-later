@@ -169,7 +169,7 @@ exports.handler = functions
 
     // Generate PDF version of web page and save to FB Storage
     const pdf = await browserPage.pdf();
-    await savePagePdfToStorage({id, url}, pdf);
+    await savePagePdfToStorage({pageId, url}, pdf);
   
   } catch (err) {
     console.error(err);
