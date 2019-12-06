@@ -11,7 +11,6 @@ const MSG_CLASS = 'bg-light-green';
 // and having it global makes it easier to clear the listeners.
 let moreResultsEl;
 
-
 /**
  * Helper for clearing search results.
  */
@@ -70,6 +69,11 @@ function showMessage(msg, opts = {isError: false, autoClose: false}) {
   el('messages')
     .addClass(opts.isError ? ERR_CLASS : MSG_CLASS)  
     .removeClass('dn');
+
+  if (isError && window.location.hostname === 'localhost') {
+    console.log(msg);
+  }
+
   if (opts.autoClose) {
     setTimeout(hideMessage, 3000);
   }
@@ -86,15 +90,10 @@ function hideMessage() {
  * Search for the given term, returning all pages if term is empty, for 
  * the currently authenticated user.
  * 
- * @param {String} userId owner id of the resources to search through  
  * @param {String} term the word to search for in the pages
  * @param {String} startAt starting cursor for pagination
  */
 function search(term, startAt, isNew=true) {
-  // It's assumed we have an authenticated user at this point, otherwise
-  // we would have been redirect to signin page
-  const user = firebase.auth().currentUser;
-
   // Clean up our search term 
   const sanitizedTerm = (term || '').trim() // no starting or trailing spaces
     .replace(/\W|_/g,'') // remove all non alpha numeric chars
@@ -110,8 +109,8 @@ function search(term, startAt, isNew=true) {
   const limit = DEFAULT_RESULT_SIZE + 1;
 
   const results = sanitizedTerm === '' 
-    ? listPages(user.uid, {startAt, limit})
-    : findPagesByTerm(user.uid, sanitizedTerm, {startAt, limit});
+    ? listPages({startAt, limit})
+    : findPagesByTerm(sanitizedTerm, {startAt, limit});
   
   // Display our results if success, otherwise show the error
   results
@@ -122,14 +121,15 @@ function search(term, startAt, isNew=true) {
 /**
  * Find all pages that have the given term.
  * 
- * @param {String} userId owner id of the resources to search through 
  * @param {String} term the word to search for in the pages 
  * @param {Object} opts 
  * @param {String} opts.startAt cursor to start at for paging 
  * @param {Number} opts.limit number of results to return 
  */
-function findPagesByTerm(userId, term, {startAt, limit}) {
-  const userRef = db.collection('users').doc(userId);
+function findPagesByTerm(term, {startAt, limit}) {
+
+  const user = getCurrentUser();
+  const userRef = db.collection('users').doc(user.uid);
   const userTermPagesRef = userRef.collection('terms').doc(term).collection('pages');
 
   const query = userTermPagesRef
@@ -158,16 +158,16 @@ function findPagesByTerm(userId, term, {startAt, limit}) {
 }
 
 /**
- * Return a list of pages belonging to the given user.
+ * Return a list of pages for current user.
  * 
- * @param {String} userId owner id of resources to return 
  * @param {Object} opts 
  * @param {String} opts.startAt cursor to start at for paging 
  * @param {Number} opts.limit number of results to return 
  */
-function listPages(userId, {startAt, limit}) {
+function listPages({startAt, limit}) {
   // Reference to the users/pages collection
-  const userPagesRef = db.collection('users').doc(userId).collection('pages');
+  const user = getCurrentUser();
+  const userPagesRef = db.collection('users').doc(user.uid).collection('pages');
 
   const query = userPagesRef
     .orderBy('createdAt', 'desc')
@@ -226,8 +226,7 @@ function toggleSigninLoading(show = true) {
 
 /**
  * Load the home page, thus hiding the signin page. Called
- * after successful authentication or already auth and 
- * reload page.
+ * after successful authentication or already auth and reload page.
  */
 function loadHome() {
   toggleSigninModal(false);
@@ -263,12 +262,13 @@ function signin() {
 }
 
 /**
- * Any time there's a user state change (e.g, signin/signout), we'll
- * handle here.
- * @param {Object} user 
+ * Any time there's a user state change (e.g, signin/signout), we'll handle here.
+ * 
+ * @param {Object} user either authenticated or null
  */
 function handleStateChange(user) {
   const {pathname} = window.location;
+
   // No user or user wishes to signout
   if (!user || pathname === '/signout') {
     signout();
@@ -276,12 +276,16 @@ function handleStateChange(user) {
   }
   // At this point, user must be authenticated, so show the home page,
   // also fix the path if needed.
-  if (pathname === '/signin')
+  if (pathname === '/signin') {
     history.replaceState({}, '', '/');
-
+  }
+  // All kosher, we have auth user, lets load home page
   loadHome();  
 }
 
+/**
+ * Builds the bookmarklet url for the current host.
+ */
 function createBookmarkletScript() {
   const {protocol, host} = window.location;
   return encodeURI(`javascript:(function(){var w=window,d=document,e=encodeURIComponent,o=w.open('${protocol}//${host}/add?url='+e(d.location),'_ritl','left='+((w.screenX||w.screenLeft)+10)+',top='+((w.screenY||w.screenTop)+10)+',height=310,width=600,resizable=1,alwaysRaised=1,status=0');w.setTimeout(function(){o.focus()},400)})();`);
@@ -332,5 +336,4 @@ ready(() => {
   el('close-msg-btn').addListener('click', hideMessage);
 
   el('bookmarklet').get().href = createBookmarkletScript();
-  
 });

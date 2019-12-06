@@ -93,10 +93,20 @@ function isValidURL(url) {
 }
 
 /**
+ * Returns the currently authenticated Firebase user. Encapsulating
+ * this so we can decouple explicit calls to firebase and makes testing
+ * easier.
+ */
+function getCurrentUser() {
+  return firebase.auth().currentUser;
+}
+
+/**
  * Add a new web page to the database.
  * 
- * @param {Object} page
- * @param {String} page.url address of web page to add
+ * @param {*} url address of web page to add
+ * @param {*} onSuccess handler on successful add
+ * @param {*} onError handle on error
  */
 function addPage(url, onSuccess, onError) {
   url = (url || '').trim();
@@ -105,7 +115,7 @@ function addPage(url, onSuccess, onError) {
     return;
   }
 
-  const user = firebase.auth().currentUser;
+  const user = getCurrentUser();
   const userPagesRef = db.collection('users').doc(user.uid).collection('pages');
 
   userPagesRef.where('url', '==', url).get()
@@ -125,6 +135,7 @@ function addPage(url, onSuccess, onError) {
 }
 
 const db = firebase.firestore();
+let authenticatedUser = null;
 
 if (window.location.hostname === 'localhost') {
   // Use the emulator if we in development, it's kinda hacky but see:
