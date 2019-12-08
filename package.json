@@ -15,7 +15,7 @@
     "sinon": "7.5.0"
   },
   "scripts": {
-    "test": "mocha './{,!(node_modules)/**}/*.test.js' --timeout=30000 --watch --extension js,html"
+    "test": "mocha ./test/**/*.test.js ./functions/test/**/*.test.js --timeout=30000 --watch --extension js,html"
   },
   "keywords": [
     "firebase",
