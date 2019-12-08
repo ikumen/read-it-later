@@ -1,83 +1,141 @@
 const assert = require('assert');
-
 const firebase = require('@firebase/testing');
 const puppeteer =  require('puppeteer');
 
-const projectId = 'read-it-later-demo';
 // Apps are deleted after each test run, need to re-initialize
-const getFirestoreDB = () => firebase.initializeTestApp({projectId}).firestore();
+//const getFirestoreDB = () => firebase.initializeTestApp({projectId}).firestore();
+
+// Config
+const projectId = 'ritl-test-app';
+
+// Test Data
+const baseEndPoint = 'http://localhost:5000';
+//const user = {uid: 'YRXqSxUjOvVXrQbsPc9LaUcJ1zp1', email: "ikumen@gnoht.com"};
+const user = {uid: '123abc', email: "user@acme.com"};
+const endPoints = {
+  home: `${baseEndPoint}/`,
+  signIn: `${baseEndPoint}/signin`,
+  signOut: `${baseEndPoint}/signout`
+}
 
 let browser;
-beforeEach(async () => {
-  browser = await puppeteer.launch({headless: true, args:['--no-sandbox']});
-  await firebase.clearFirestoreData({projectId})
-});
 
-afterEach(async () => {
-  await Promise.all(firebase.apps().map(app => app.delete()));
-  browser && await browser.close();
-});
+/**
+ * Opens new browser page to given url. Returns tuple of Response and Page.
+ * 
+ * @param {String} url 
+ */
+const goto = async (url) => {
+  const page = await browser.newPage();
+  const resp = await page.goto(url);
+  return [resp, page];
+}
 
-describe('read-it-later web app test suite', () => {
+/**
+ * Helper for getting element property.
+ * 
+ * @param {String} id element id 
+ * @param {String} propName name of property to return
+ * @param {Object} page 
+ */
+const getElProperty = async (id, propName, page) => {
+  const elHandle = await page.$(`#${id}`);
+  return await elHandle.getProperty(propName);
+}
 
-  const indexUrl = 'http://localhost:5000';
+/**
+ * Helper for getting an element's class.
+ * 
+ * @param {String} id element id
+ * @param {Object} page 
+ */
+const getElClass = async (id, page) => {
+  return await (await getElProperty(id, 'className', page)).jsonValue();
+}
 
-  it('index.html: should load web app with simple search and add url form', async () => {
-    let page = await browser.newPage();
-    // Load the page
-    await page.goto(indexUrl);
+/**
+ * Simple wait helper.
+ * 
+ * @param {Number} ms milliseconds to wait before resolve 
+ */
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // Merely check for the following form elements, not formating/layout
-    assert.ok(await page.$('#search-n-add-form'));
-    assert.ok(await page.$('#search-btn'));
-    assert.ok(await page.$('#add-page-btn'));
-    assert.ok(await page.$('#term-or-url-input'));
+describe('Integration::Web App Test Suite', () => {
+  beforeEach(async () => {
+    browser = await puppeteer.launch({headless: true, args:['--no-sandbox']});
+    await firebase.clearFirestoreData({projectId})
+    const app = firebase.initializeTestApp({
+      projectId,
+      auth: user
+    });
+    const db = app.firestore()
+    await db.collection('users').doc(user.uid)
+        .collection('pages').add({
+          url: 'https://en.wikipedia.org/wiki/Issaquah,_Washington',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+    await wait(3000); // give indexer time to create page
   });
 
-  it('index.html: should fail when adding an invalid URL', async () => {
-    let page = await browser.newPage();
-    let alertMsg;
+  afterEach(async () => {
+    await Promise.all(firebase.apps().map(app => app.delete()));
+    browser && await browser.close();
+  })
 
-    // Load the page
-    await page.goto(indexUrl);
+  it('home: when user is unauthenticated should return signin', async () => {
+    const [resp, page] = await goto(endPoints.home);
+    let className = await getElClass('signin-modal', page);
+    let pageUrl = await page.url();
+    page.on('console', msg => console.log(msg._text))
 
-    // Register a handler when puppeteer page get's an alert, this must 
-    // be done before clicking add-page-btn.
-    page.on('dialog', async (dialog) => {
-      // assign alert message to local variable for assertion later
-      alertMsg = dialog.message();
-      await dialog.dismiss();
-    });
+    // Home gets initially loaded, and signin modal is hidden (ie, no open class)
+    assert.equal(pageUrl, endPoints.home);
+    assert.equal('modal', className);
 
-    // Attempt to add an invalid url
-    await page.evaluate(async () => {
-      document.getElementById('term-or-url-input').value = 'foobar';
-      document.getElementById('add-page-btn').click();
-    });
+    // Wait for script execution on page to complete
+    await page.waitForNavigation({waitUntil: 'networkidle0'});
+    await page.evaluate(`window.getCurrentUser = () => {
+      console.log('foo ===== bar');
+      return ${JSON.stringify(user)};
+    }`)
 
-    assert.equal(alertMsg, `Not a valid URL: foobar`)
+    // Expect navigate to /signin and signin modal should display
+    pageUrl = await page.url();
+    className = await getElClass('signin-modal', page);
+    assert.equal(pageUrl, endPoints.signIn);
+    assert.equal('modal open', className);
   });
 
-  it('index.html: should save a web page URL as a page document', async () => {
-    let page = await browser.newPage();
-    // Load the page
-    await page.goto(indexUrl);
 
-    const db = getFirestoreDB();
-    await db.collection('pages').get().then(snap => {
-      assert.equal(snap.size, 0);
-    });
+  it('home: when user is authenticated should return home', async () => {
+    // We start with request to home
+    const [resp, page] = await goto(endPoints.home);
+    let className = await getElClass('signin-modal', page);
+    let pageUrl = await page.url();
 
-    await page.evaluate(async () => {
-      document.getElementById('term-or-url-input').value = 'http://eloquentjavascript.net/00_intro.html';
-      document.getElementById('add-page-btn').click();
-      // wait for save to emulator
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    });
+    page.on('console', msg => console.log(msg._text))
+    await page.evaluate(`window.getCurrentUser = () => {
+      console.log('foo ===== bar');
+      return ${JSON.stringify(user)};
+    }`)
 
-    await db.collection('pages').get().then(snap => {
-      assert.equal(snap.size, 1);
-    });
+    // Home gets initialdly loaded, and signin modal is hidden (ie, no open class)
+    assert.equal(pageUrl, endPoints.home);
+    assert.equal('modal', className);
+
+    // Wait for script execution on page to complete
+    await page.waitForNavigation({waitUntil: 'networkidle0'});
+    // Fake authenticating a user
+    await page.evaluate(`handleStateChange(${JSON.stringify(user)})`);
+
+    // Expect home, should NOT display modal
+    pageUrl = await page.url();
+    className = await getElClass('signin-modal', page);
+    assert.equal(pageUrl, endPoints.home);
+    assert.equal('modal', className);
   });
+
 
 });
+
