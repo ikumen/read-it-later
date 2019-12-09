@@ -1,6 +1,10 @@
 # Read It Later
 Simple, searchable, archivable, bookmarking app&mdash;a side project while I was learning [Firebase](//firebase.google.com). For personal/demo use, the app will run pretty much within the [free quota limits](https://firebase.google.com/docs/firestore/quotas#free-quota), YMMV.
 
+<img src="https://i.imgur.com/V91k5D3.png" width="400"> <img src="https://i.imgur.com/RXYNQh9.png" width="400">
+
+## Application Overview
+
 ```
                                                                [ WWW ]
                                                                   |
@@ -16,14 +20,14 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
  |               |       |              <---------- save text |         |            |  |
  |               |       |                |   |  |  save pdf ---------------> .pdf   |  |
  | [Search Term] ----------> [ /terms ]   |   |  .------------.         |            |  |
- |               |       .-------|--------.   |                         .------------.  |
+ |               |       .-------^--------.   |                         .------------.  |
  .---------------.               |            |  .-------------.                        |
             |                    |            |  | Indexer Fn  |                        |
             |                    |            |  |-------------|                        |
             |                    |            |  |             |                        |
-            |                    |            \----- (text)    |                        |
+            |                    |            \--->  (text)    |                        |
             |                    |               | build index |                        |
-            |                    \----------------  save terms |                        |
+            |                    \-------- < -----  save terms |                        |
             |                                    |             |                        |
             |                                    .-------------.                        |
             .---------------------------------------------------------------------------.
@@ -31,11 +35,11 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
 
 ## Quick Start
 
-### Prerequisite
+#### Prerequisite
 
 * have GitHub account, we use GitHub as an [OAuth provider](https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/)
 
-### Cool, Let's Get Started
+#### Cool, Let's Get Started
 
 1. Sign up for Firebase and create a project, make note of the `project id`.
 1. Set your default resource location:
@@ -77,5 +81,4 @@ Simple, searchable, archivable, bookmarking app&mdash;a side project while I was
 
 Your app should be deployed to `https://<project id>.web.app`
 
-<img src="https://i.imgur.com/V91k5D3.png" width="400"> <img src="https://i.imgur.com/RXYNQh9.png" width="400">
 
