@@ -118,8 +118,10 @@ function addPage(url, onSuccess, onError) {
   const user = getCurrentUser();
   const userPagesRef = db.collection('users').doc(user.uid).collection('pages');
 
+  // First query to see if page with given url already exists for this user
   userPagesRef.where('url', '==', url).get()
     .then((snapshot) => {
+      // Doesn't exists, we can proceed with adding page as bookmark
       if (snapshot.empty) {
         userPagesRef.add({
           url, 
@@ -138,7 +140,7 @@ const db = firebase.firestore();
 let authenticatedUser = null;
 
 if (window.location.hostname === 'localhost') {
-  // Use the emulator if we in development, it's kinda hacky but see:
+  // Use the emulator if we are in development, it's kinda hacky but see:
   // https://firebase.google.com/docs/emulator-suite/connect_and_prototype
   db.settings({ host: "localhost:8080", ssl: false });
 }

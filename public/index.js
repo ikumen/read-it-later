@@ -1,7 +1,3 @@
-
-// -----------------------------------------------
-// Start of main application 
-// -----------------------------------------------
 const DEFAULT_RESULT_SIZE = 10;
 const ERR_CLASS = 'bg-light-red';
 const MSG_CLASS = 'bg-light-green';
@@ -19,7 +15,11 @@ function clearResults() {
 }
 
 /**
- * Helper for display search results.
+ * Helper for displaying search results. 
+ * 
+ * Note: The number of results can be DEFAULT_RESULT_SIZE + 1, 
+ * indicating there are additional results after this results set.
+ * 
  * @param {Array} pages 
  * @param {Boolean} clear 
  */
@@ -35,6 +35,8 @@ function displayResults(pages, clear) {
   let i = 0;
   while (i < pages.length && i < DEFAULT_RESULT_SIZE) {
     const {id, title, url, description} = pages[i];
+    // For each page document, build HTML to display it in a <li>, then
+    // add the list item into the 'results-list' <ul>
     el(id, 'li', resultsEl)
       .addClass('cf pv3 hover-bg-washed-yellow')
       .innerHtml(`
@@ -52,12 +54,16 @@ function displayResults(pages, clear) {
         <h3 class="fl w-100 fw3 mv2 tc">No matching results found</h3>
       `);
   } 
-  // Handle additional results to get
+  // Handle additional results to get by showing a "More results"
+  // link and attaching a listener that will start a search for the
+  // same term but at a specific page as the cursor.
   else if (pages.length > i) {
     moreResultsEl
       .clearListeners()
       .addListener('click', () => {
         const term = el('term-or-url-input').get().value;
+        // search for term again, returning next set of results after pages[i], 
+        // false means do not clear current display results
         search(term, pages[i].id, false); 
       })
       .removeClass('dn');
@@ -167,7 +173,8 @@ function findPagesByTerm(term, {startAt, limit}) {
 function listPages({startAt, limit}) {
   // Reference to the users/pages collection
   const user = getCurrentUser();
-  const userPagesRef = db.collection('users').doc(user.uid).collection('pages');
+  const userPagesRef = db.collection('users')
+    .doc(user.uid).collection('pages');
 
   const query = userPagesRef
     .orderBy('createdAt', 'desc')
@@ -279,6 +286,7 @@ function handleStateChange(user) {
   if (pathname === '/signin') {
     history.replaceState({}, '', '/');
   }
+
   // All kosher, we have auth user, lets load home page
   loadHome();  
 }

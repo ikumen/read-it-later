@@ -16,11 +16,12 @@ const endPoints = {
   signOut: `${baseEndPoint}/signout`
 }
 
-
-describe('Integration::Web App Test Suite', () => {
+describe('Web App Test Suite', () => {
 
   beforeEach(async () => {
-    await firebase.clearFirestoreData({projectId})
+    // Make sure Firestore is empty before each test run
+    await firebase.clearFirestoreData({projectId});
+    // Initialize with test config/data
     const app = firebase.initializeTestApp({
       projectId,
       auth: user
@@ -28,12 +29,13 @@ describe('Integration::Web App Test Suite', () => {
   });
 
   afterEach(async () => {
+    // Remove all Firebase apps, services and close up puppeteer browser
     await Promise.all(firebase.apps().map(app => app.delete()));
     puppeteer.quit();
   })
 
   it('home: when user is unauthenticated should return signin', async () => {
-
+    // We start with request to home
     const {page} = await puppeteer.open(endPoints.home);
     
     // For debugging
@@ -53,8 +55,7 @@ describe('Integration::Web App Test Suite', () => {
 
 
   it('home: when user is authenticated should return home', async () => {
-
-    // We start with request to home
+    // We start with request to home /
     const {page} = await puppeteer.open(endPoints.home);
 
     // For debugging
@@ -80,7 +81,6 @@ describe('Integration::Web App Test Suite', () => {
     assert.equal(await page.url(), endPoints.home);
     assert.equal(await puppeteer.elClass('signin-modal', page), 'modal');
   });
-
 
 });
 
